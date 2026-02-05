@@ -290,28 +290,54 @@ var allIntegrations = []Integration{
 		ID:          "slack",
 		Name:        "Slack",
 		Group:       "comms",
-		Description: "Channels, messages, and sending in Slack workspaces",
+		Description: "Channels, messages, users, DMs, and search in Slack workspaces",
 		AuthNeeded:  true,
-		Commands:    []string{"pocket comms slack channels", "pocket comms slack messages [channel]", "pocket comms slack send [msg]"},
+		Commands:    []string{"pocket comms slack channels", "pocket comms slack messages [channel]", "pocket comms slack send [channel] [msg]", "pocket comms slack users", "pocket comms slack dm [user] [msg]", "pocket comms slack search [query]"},
 		SetupCmd:    "pocket setup show slack",
 	},
 	{
 		ID:          "discord",
 		Name:        "Discord",
 		Group:       "comms",
-		Description: "Servers, channels, and messages in Discord",
+		Description: "Servers (guilds), channels, messages, and DMs in Discord",
 		AuthNeeded:  true,
-		Commands:    []string{"pocket comms discord guilds", "pocket comms discord channels [guild]", "pocket comms discord messages [channel]", "pocket comms discord send [msg]"},
+		Commands:    []string{"pocket comms discord guilds", "pocket comms discord channels [guild]", "pocket comms discord messages [channel]", "pocket comms discord send [channel] [msg]", "pocket comms discord dm [user] [msg]"},
 		SetupCmd:    "pocket setup show discord",
 	},
 	{
 		ID:          "telegram",
 		Name:        "Telegram",
 		Group:       "comms",
-		Description: "Chats and messages via Telegram bot",
+		Description: "Chats, messages, and forwarding via Telegram bot",
 		AuthNeeded:  true,
-		Commands:    []string{"pocket comms telegram chats", "pocket comms telegram messages [chat]", "pocket comms telegram send [msg]"},
+		Commands:    []string{"pocket comms telegram me", "pocket comms telegram chats", "pocket comms telegram updates", "pocket comms telegram send [chat] [msg]", "pocket comms telegram forward [from] [to] [msg-id]"},
 		SetupCmd:    "pocket setup show telegram",
+	},
+	{
+		ID:          "twilio",
+		Name:        "Twilio (SMS)",
+		Group:       "comms",
+		Description: "Send and manage SMS messages via Twilio",
+		AuthNeeded:  true,
+		Commands:    []string{"pocket comms twilio send [to] [msg]", "pocket comms twilio messages", "pocket comms twilio message [sid]", "pocket comms twilio account"},
+		SetupCmd:    "pocket setup show twilio",
+	},
+	// Communication - No Auth
+	{
+		ID:          "notify",
+		Name:        "Push Notifications",
+		Group:       "comms",
+		Description: "Send push notifications via ntfy.sh (no auth) or Pushover (auth)",
+		AuthNeeded:  false,
+		Commands:    []string{"pocket comms notify ntfy [topic] [msg]", "pocket comms notify pushover [msg]"},
+	},
+	{
+		ID:          "webhook",
+		Name:        "Webhooks",
+		Group:       "comms",
+		Description: "Send data to webhooks (generic, Slack, Discord)",
+		AuthNeeded:  false,
+		Commands:    []string{"pocket comms webhook send [url] [data]", "pocket comms webhook slack [url] [msg]", "pocket comms webhook discord [url] [msg]"},
 	},
 
 	// Productivity - Auth Required
@@ -552,6 +578,13 @@ func getIntegrationStatus(cfg *config.Config, integ Integration) string {
 		}
 	case "telegram":
 		if v, _ := config.Get("telegram_token"); v != "" {
+			return "ready"
+		}
+	case "twilio":
+		sid, _ := config.Get("twilio_sid")
+		token, _ := config.Get("twilio_token")
+		phone, _ := config.Get("twilio_phone")
+		if sid != "" && token != "" && phone != "" {
 			return "ready"
 		}
 	case "calendar":

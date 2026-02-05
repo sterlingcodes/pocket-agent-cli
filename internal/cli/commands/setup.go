@@ -111,6 +111,27 @@ var services = map[string]ServiceInfo{
 		SetupGuide:  "1. Message @BotFather on Telegram\n2. Send /newbot and follow instructions\n3. Copy the token provided\n4. Run: pocket config set telegram_token <token>",
 		TestCommand: "pocket comms telegram chats",
 	},
+	"twilio": {
+		Service: "twilio",
+		Name:    "Twilio (SMS)",
+		Keys: []KeyInfo{
+			{Key: "twilio_sid", Description: "Account SID", Required: true, Example: "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"},
+			{Key: "twilio_token", Description: "Auth Token", Required: true},
+			{Key: "twilio_phone", Description: "Your Twilio phone number", Required: true, Example: "+15551234567"},
+		},
+		SetupGuide: `1. Sign up at https://www.twilio.com/try-twilio
+2. Go to Console Dashboard: https://console.twilio.com/
+3. Copy your Account SID and Auth Token from the dashboard
+4. Get a phone number from the Phone Numbers section
+5. Run these commands:
+   pocket config set twilio_sid <your-account-sid>
+   pocket config set twilio_token <your-auth-token>
+   pocket config set twilio_phone <your-twilio-phone-number>
+
+Note: Phone numbers must be in E.164 format (e.g., +15551234567)
+Free trial accounts can only send to verified phone numbers.`,
+		TestCommand: "pocket comms twilio account",
+	},
 	"email": {
 		Service: "email",
 		Name:    "Email (IMAP/SMTP)",
@@ -307,6 +328,26 @@ Note: Free tier allows 25 requests/day, 5/min`,
    pocket config set trello_key <your-api-key>
    pocket config set trello_token <your-token>`,
 		TestCommand: "pocket productivity trello boards",
+	},
+	"pushover": {
+		Service: "pushover",
+		Name:    "Pushover",
+		Keys: []KeyInfo{
+			{Key: "pushover_token", Description: "Application API Token", Required: true, Example: "azGDORePK8gMaC0QOYAMyEEuzJnyUi"},
+			{Key: "pushover_user", Description: "User Key", Required: true, Example: "uQiRzpo4DXghDmr9QzzfQu27cmVRsG"},
+		},
+		SetupGuide: `1. Sign up at https://pushover.net/
+2. Install Pushover app on your phone (iOS/Android) or desktop
+3. Your User Key is shown on the dashboard after login
+4. Create an Application at https://pushover.net/apps/build
+5. Copy the Application API Token
+6. Run:
+   pocket config set pushover_token <your-app-token>
+   pocket config set pushover_user <your-user-key>
+
+Note: Pushover has a one-time $5 purchase for each platform.
+After setup, use: pocket comms notify pushover "Your message"`,
+		TestCommand: "pocket comms notify pushover 'Test notification from Pocket CLI'",
 	},
 }
 

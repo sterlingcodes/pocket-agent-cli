@@ -32,6 +32,9 @@ type Config struct {
 	SlackToken    string `json:"slack_token,omitempty"`
 	DiscordToken  string `json:"discord_token,omitempty"`
 	TelegramToken string `json:"telegram_token,omitempty"`
+	TwilioSID     string `json:"twilio_sid,omitempty"`
+	TwilioToken   string `json:"twilio_token,omitempty"`
+	TwilioPhone   string `json:"twilio_phone,omitempty"`
 
 	// Email (IMAP/SMTP)
 	EmailAddress  string `json:"email_address,omitempty"`
@@ -67,6 +70,10 @@ type Config struct {
 
 	// Utility
 	AlphaVantageKey string `json:"alphavantage_key,omitempty"`
+
+	// Push Notifications
+	PushoverToken string `json:"pushover_token,omitempty"`
+	PushoverUser  string `json:"pushover_user,omitempty"`
 }
 
 // Path returns the config file path
@@ -163,6 +170,12 @@ func Set(key, value string) error {
 		cfg.DiscordToken = value
 	case "telegram_token":
 		cfg.TelegramToken = value
+	case "twilio_sid":
+		cfg.TwilioSID = value
+	case "twilio_token":
+		cfg.TwilioToken = value
+	case "twilio_phone":
+		cfg.TwilioPhone = value
 	case "email_address":
 		cfg.EmailAddress = value
 	case "email_password":
@@ -209,6 +222,10 @@ func Set(key, value string) error {
 		cfg.AnthropicKey = value
 	case "alphavantage_key":
 		cfg.AlphaVantageKey = value
+	case "pushover_token":
+		cfg.PushoverToken = value
+	case "pushover_user":
+		cfg.PushoverUser = value
 	default:
 		return fmt.Errorf("unknown config key: %s", key)
 	}
@@ -250,6 +267,12 @@ func Get(key string) (string, error) {
 		return cfg.DiscordToken, nil
 	case "telegram_token":
 		return cfg.TelegramToken, nil
+	case "twilio_sid":
+		return cfg.TwilioSID, nil
+	case "twilio_token":
+		return cfg.TwilioToken, nil
+	case "twilio_phone":
+		return cfg.TwilioPhone, nil
 	case "email_address":
 		return cfg.EmailAddress, nil
 	case "email_password":
@@ -296,6 +319,10 @@ func Get(key string) (string, error) {
 		return cfg.AnthropicKey, nil
 	case "alphavantage_key":
 		return cfg.AlphaVantageKey, nil
+	case "pushover_token":
+		return cfg.PushoverToken, nil
+	case "pushover_user":
+		return cfg.PushoverUser, nil
 	default:
 		return "", fmt.Errorf("unknown config key: %s", key)
 	}
@@ -326,6 +353,9 @@ func (c *Config) Redacted() map[string]string {
 		"slack_token":           redact(c.SlackToken),
 		"discord_token":         redact(c.DiscordToken),
 		"telegram_token":        redact(c.TelegramToken),
+		"twilio_sid":            redact(c.TwilioSID),
+		"twilio_token":          redact(c.TwilioToken),
+		"twilio_phone":          c.TwilioPhone,
 		"email_address":         c.EmailAddress,
 		"email_password":        redact(c.EmailPassword),
 		"imap_server":           c.IMAPServer,
@@ -349,6 +379,8 @@ func (c *Config) Redacted() map[string]string {
 		"openai_key":            redact(c.OpenAIKey),
 		"anthropic_key":         redact(c.AnthropicKey),
 		"alphavantage_key":      redact(c.AlphaVantageKey),
+		"pushover_token":        redact(c.PushoverToken),
+		"pushover_user":         redact(c.PushoverUser),
 	}
 }
 
