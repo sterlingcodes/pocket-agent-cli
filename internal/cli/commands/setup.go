@@ -66,13 +66,13 @@ var services = map[string]ServiceInfo{
 		Service: "twitter",
 		Name:    "Twitter/X",
 		Keys: []KeyInfo{
-			{Key: "twitter_api_key", Description: "API Key (Consumer Key)", Required: true},
-			{Key: "twitter_api_secret", Description: "API Secret (Consumer Secret)", Required: true},
-			{Key: "twitter_access_token", Description: "Access Token", Required: true},
-			{Key: "twitter_access_secret", Description: "Access Token Secret", Required: true},
+			{Key: "x_api_key", Description: "API Key (Consumer Key)", Required: true},
+			{Key: "x_api_secret", Description: "API Key Secret (Consumer Secret)", Required: true},
+			{Key: "x_access_token", Description: "Access Token", Required: true},
+			{Key: "x_access_secret", Description: "Access Token Secret", Required: true},
 		},
-		SetupGuide:  "1. Go to https://developer.twitter.com/en/portal/dashboard\n2. Create a project and app\n3. Generate Consumer Keys and Access Tokens\n4. Run:\n   pocket config set twitter_api_key <key>\n   pocket config set twitter_api_secret <secret>\n   pocket config set twitter_access_token <token>\n   pocket config set twitter_access_secret <secret>",
-		TestCommand: "pocket social twitter timeline -l 1",
+		SetupGuide:  "1. Go to https://developer.x.com/en/portal/dashboard\n2. Create a project and app (Free tier works)\n3. In 'Keys and Tokens', generate:\n   - API Key and Secret (Consumer Keys)\n   - Access Token and Secret\n4. Run:\n   pocket config set x_api_key <api-key>\n   pocket config set x_api_secret <api-secret>\n   pocket config set x_access_token <access-token>\n   pocket config set x_access_secret <access-secret>\n\nNote: Free tier allows posting 1,500 tweets/month. Reading requires paid tier ($200/mo).",
+		TestCommand: "pocket social twitter me",
 	},
 	"reddit": {
 		Service: "reddit",
@@ -80,8 +80,10 @@ var services = map[string]ServiceInfo{
 		Keys: []KeyInfo{
 			{Key: "reddit_client_id", Description: "OAuth Client ID", Required: true},
 			{Key: "reddit_client_secret", Description: "OAuth Client Secret", Required: true},
+			{Key: "reddit_username", Description: "Your Reddit username", Required: true},
+			{Key: "reddit_password", Description: "Your Reddit password", Required: true},
 		},
-		SetupGuide:  "1. Go to https://www.reddit.com/prefs/apps\n2. Create an app (script type)\n3. Copy the client ID (under app name) and secret\n4. Run:\n   pocket config set reddit_client_id <id>\n   pocket config set reddit_client_secret <secret>",
+		SetupGuide:  "1. Go to https://www.reddit.com/prefs/apps\n2. Click 'create another app' at the bottom\n3. Select 'script' type, name it, set redirect to http://localhost\n4. Copy the client ID (under app name) and secret\n5. Run:\n   pocket config set reddit_client_id <id>\n   pocket config set reddit_client_secret <secret>\n   pocket config set reddit_username <your-username>\n   pocket config set reddit_password <your-password>\n\nNote: Free tier allows 100 req/min for non-commercial use.",
 		TestCommand: "pocket social reddit feed -l 1",
 	},
 	"slack": {

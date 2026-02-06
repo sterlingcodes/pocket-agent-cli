@@ -243,18 +243,18 @@ var allIntegrations = []Integration{
 		ID:          "twitter",
 		Name:        "Twitter/X",
 		Group:       "social",
-		Description: "Post tweets, read timeline, search, and get user info",
+		Description: "Post tweets, delete tweets, get account info (free tier: 1,500 posts/month)",
 		AuthNeeded:  true,
-		Commands:    []string{"pocket social twitter timeline", "pocket social twitter post [msg]", "pocket social twitter search [query]", "pocket social twitter user [name]"},
+		Commands:    []string{"pocket social twitter post [msg]", "pocket social twitter delete [id]", "pocket social twitter me", "pocket social twitter --reply-to [id] [msg]"},
 		SetupCmd:    "pocket setup show twitter",
 	},
 	{
 		ID:          "reddit",
 		Name:        "Reddit",
 		Group:       "social",
-		Description: "Browse feeds, subreddits, search, and post",
+		Description: "Browse feeds, subreddits, search, users, and comments (free tier: 100 req/min)",
 		AuthNeeded:  true,
-		Commands:    []string{"pocket social reddit feed", "pocket social reddit subreddit [name]", "pocket social reddit search [query]", "pocket social reddit post [content]"},
+		Commands:    []string{"pocket social reddit feed", "pocket social reddit subreddit [name]", "pocket social reddit search [query]", "pocket social reddit user [name]", "pocket social reddit comments [post-id]"},
 		SetupCmd:    "pocket setup show reddit",
 	},
 	{
@@ -620,7 +620,7 @@ func getIntegrationStatus(cfg *config.Config, integ Integration) string {
 			return "ready"
 		}
 	case "twitter":
-		if v, _ := config.Get("twitter_api_key"); v != "" {
+		if v, _ := config.Get("x_api_key"); v != "" {
 			return "ready"
 		}
 	case "reddit":
