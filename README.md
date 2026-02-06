@@ -230,7 +230,7 @@ pocket productivity logseq search "todo" # Search pages
 | **Productivity** (6) | Todoist, Notion, Google Calendar, Trello, Obsidian, Logseq |
 | **Utility** (10) | Weather, Crypto, Currency, IP lookup, DNS/WHOIS/SSL, Wayback Machine, Holidays, Translation, URL Shortener, Stocks |
 | **AI** (2) | OpenAI, Anthropic |
-| **System** (8) | Apple Calendar, Apple Reminders, Apple Notes, Apple Contacts, Apple Mail, Safari, Finder, Clipboard *(macOS only)* |
+| **System** (9) | Apple Calendar, Apple Reminders, Apple Notes, Apple Contacts, Apple Mail, Safari, Finder, Clipboard, iMessage *(macOS only)* |
 
 ### 27 integrations work without any setup:
 Hacker News, RSS, Wikipedia, StackOverflow, Dictionary, Weather, Crypto, Currency, IP lookup, Domain tools, Wayback Machine, Holidays, Translation, URL Shortener, npm, PyPI, Docker Hub, ntfy notifications, Webhooks, plus all 8 macOS System integrations
