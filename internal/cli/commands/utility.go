@@ -5,9 +5,13 @@ import (
 	"github.com/unstablemind/pocket/internal/utility/crypto"
 	"github.com/unstablemind/pocket/internal/utility/currency"
 	"github.com/unstablemind/pocket/internal/utility/domain"
+	"github.com/unstablemind/pocket/internal/utility/geocoding"
 	"github.com/unstablemind/pocket/internal/utility/holidays"
 	"github.com/unstablemind/pocket/internal/utility/ipinfo"
+	"github.com/unstablemind/pocket/internal/utility/netdiag"
+	"github.com/unstablemind/pocket/internal/utility/paste"
 	"github.com/unstablemind/pocket/internal/utility/stocks"
+	"github.com/unstablemind/pocket/internal/utility/timezone"
 	"github.com/unstablemind/pocket/internal/utility/translate"
 	"github.com/unstablemind/pocket/internal/utility/urlshort"
 	"github.com/unstablemind/pocket/internal/utility/wayback"
@@ -32,6 +36,10 @@ func NewUtilityCmd() *cobra.Command {
 	cmd.AddCommand(translate.NewCmd())
 	cmd.AddCommand(stocks.NewCmd())
 	cmd.AddCommand(urlshort.NewCmd())
+	cmd.AddCommand(geocoding.NewCmd())
+	cmd.AddCommand(netdiag.NewCmd())
+	cmd.AddCommand(paste.NewCmd())
+	cmd.AddCommand(timezone.NewCmd())
 
 	return cmd
 }

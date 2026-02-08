@@ -53,6 +53,12 @@ type Config struct {
 	JiraToken       string `json:"jira_token,omitempty"`
 	VercelToken     string `json:"vercel_token,omitempty"`
 	CloudflareToken string `json:"cloudflare_token,omitempty"`
+	SentryAuthToken string `json:"sentry_auth_token,omitempty"`
+	SentryOrg       string `json:"sentry_org,omitempty"`
+	RedisURL        string `json:"redis_url,omitempty"`
+	RedisPassword   string `json:"redis_password,omitempty"`
+	PrometheusURL   string `json:"prometheus_url,omitempty"`
+	PrometheusToken string `json:"prometheus_token,omitempty"`
 
 	// Productivity
 	NotionToken    string `json:"notion_token,omitempty"`
@@ -60,6 +66,15 @@ type Config struct {
 	TrelloKey      string `json:"trello_key,omitempty"`
 	TrelloToken    string `json:"trello_token,omitempty"`
 	GoogleCredPath string `json:"google_cred_path,omitempty"`
+	GoogleAPIKey   string `json:"google_api_key,omitempty"`
+
+	// AWS / S3
+	AWSProfile string `json:"aws_profile,omitempty"`
+	AWSRegion  string `json:"aws_region,omitempty"`
+
+	// Spotify
+	SpotifyClientID     string `json:"spotify_client_id,omitempty"`
+	SpotifyClientSecret string `json:"spotify_client_secret,omitempty"`
 
 	// News
 	NewsAPIKey string `json:"newsapi_key,omitempty"`
@@ -210,6 +225,18 @@ func Set(key, value string) error {
 		cfg.VercelToken = value
 	case "cloudflare_token":
 		cfg.CloudflareToken = value
+	case "sentry_auth_token":
+		cfg.SentryAuthToken = value
+	case "sentry_org":
+		cfg.SentryOrg = value
+	case "redis_url":
+		cfg.RedisURL = value
+	case "redis_password":
+		cfg.RedisPassword = value
+	case "prometheus_url":
+		cfg.PrometheusURL = value
+	case "prometheus_token":
+		cfg.PrometheusToken = value
 	case "notion_token":
 		cfg.NotionToken = value
 	case "todoist_token":
@@ -220,6 +247,16 @@ func Set(key, value string) error {
 		cfg.TrelloToken = value
 	case "google_cred_path":
 		cfg.GoogleCredPath = value
+	case "google_api_key":
+		cfg.GoogleAPIKey = value
+	case "aws_profile":
+		cfg.AWSProfile = value
+	case "aws_region":
+		cfg.AWSRegion = value
+	case "spotify_client_id":
+		cfg.SpotifyClientID = value
+	case "spotify_client_secret":
+		cfg.SpotifyClientSecret = value
 	case "newsapi_key":
 		cfg.NewsAPIKey = value
 	case "alphavantage_key":
@@ -315,6 +352,18 @@ func Get(key string) (string, error) {
 		return cfg.VercelToken, nil
 	case "cloudflare_token":
 		return cfg.CloudflareToken, nil
+	case "sentry_auth_token":
+		return cfg.SentryAuthToken, nil
+	case "sentry_org":
+		return cfg.SentryOrg, nil
+	case "redis_url":
+		return cfg.RedisURL, nil
+	case "redis_password":
+		return cfg.RedisPassword, nil
+	case "prometheus_url":
+		return cfg.PrometheusURL, nil
+	case "prometheus_token":
+		return cfg.PrometheusToken, nil
 	case "notion_token":
 		return cfg.NotionToken, nil
 	case "todoist_token":
@@ -325,6 +374,16 @@ func Get(key string) (string, error) {
 		return cfg.TrelloToken, nil
 	case "google_cred_path":
 		return cfg.GoogleCredPath, nil
+	case "google_api_key":
+		return cfg.GoogleAPIKey, nil
+	case "aws_profile":
+		return cfg.AWSProfile, nil
+	case "aws_region":
+		return cfg.AWSRegion, nil
+	case "spotify_client_id":
+		return cfg.SpotifyClientID, nil
+	case "spotify_client_secret":
+		return cfg.SpotifyClientSecret, nil
 	case "newsapi_key":
 		return cfg.NewsAPIKey, nil
 	case "alphavantage_key":
@@ -392,11 +451,22 @@ func (c *Config) Redacted() map[string]string {
 		"jira_token":            redact(c.JiraToken),
 		"vercel_token":          redact(c.VercelToken),
 		"cloudflare_token":      redact(c.CloudflareToken),
+		"sentry_auth_token":     redact(c.SentryAuthToken),
+		"sentry_org":            c.SentryOrg,
+		"redis_url":             c.RedisURL,
+		"redis_password":        redact(c.RedisPassword),
+		"prometheus_url":        c.PrometheusURL,
+		"prometheus_token":      redact(c.PrometheusToken),
 		"notion_token":          redact(c.NotionToken),
 		"todoist_token":         redact(c.TodoistToken),
 		"trello_key":            redact(c.TrelloKey),
 		"trello_token":          redact(c.TrelloToken),
 		"google_cred_path":      c.GoogleCredPath,
+		"google_api_key":        redact(c.GoogleAPIKey),
+		"aws_profile":           c.AWSProfile,
+		"aws_region":            c.AWSRegion,
+		"spotify_client_id":     redact(c.SpotifyClientID),
+		"spotify_client_secret": redact(c.SpotifyClientSecret),
 		"newsapi_key":           redact(c.NewsAPIKey),
 		"alphavantage_key":      redact(c.AlphaVantageKey),
 		"pushover_token":        redact(c.PushoverToken),

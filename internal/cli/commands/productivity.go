@@ -3,6 +3,8 @@ package commands
 import (
 	"github.com/spf13/cobra"
 	"github.com/unstablemind/pocket/internal/productivity/calendar"
+	"github.com/unstablemind/pocket/internal/productivity/gdrive"
+	"github.com/unstablemind/pocket/internal/productivity/gsheets"
 	"github.com/unstablemind/pocket/internal/productivity/logseq"
 	"github.com/unstablemind/pocket/internal/productivity/notion"
 	"github.com/unstablemind/pocket/internal/productivity/obsidian"
@@ -24,6 +26,8 @@ func NewProductivityCmd() *cobra.Command {
 	cmd.AddCommand(obsidian.NewCmd())
 	cmd.AddCommand(todoist.NewCmd())
 	cmd.AddCommand(trello.NewCmd())
+	cmd.AddCommand(gsheets.NewCmd())
+	cmd.AddCommand(gdrive.NewCmd())
 
 	return cmd
 }

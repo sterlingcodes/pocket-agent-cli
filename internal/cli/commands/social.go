@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/unstablemind/pocket/internal/social/mastodon"
 	"github.com/unstablemind/pocket/internal/social/reddit"
+	"github.com/unstablemind/pocket/internal/social/spotify"
 	"github.com/unstablemind/pocket/internal/social/twitter"
 	"github.com/unstablemind/pocket/internal/social/youtube"
 )
@@ -20,6 +21,7 @@ func NewSocialCmd() *cobra.Command {
 	cmd.AddCommand(reddit.NewCmd())
 	cmd.AddCommand(mastodon.NewCmd())
 	cmd.AddCommand(youtube.NewCmd())
+	cmd.AddCommand(spotify.NewCmd())
 
 	return cmd
 }
