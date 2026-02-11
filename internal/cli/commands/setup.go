@@ -400,6 +400,76 @@ Graph structure:
 Page names with special characters (/, :, ?) are URL-encoded in filenames.`,
 		TestCommand: "pocket productivity logseq graphs",
 	},
+	"amazon-sp": {
+		Service: "amazon-sp",
+		Name:    "Amazon Selling Partner",
+		Keys: []KeyInfo{
+			{Key: "amazon_sp_client_id", Description: "LWA Client ID from Seller Central app", Required: true},
+			{Key: "amazon_sp_client_secret", Description: "LWA Client Secret", Required: true},
+			{Key: "amazon_sp_refresh_token", Description: "LWA Refresh Token (from app authorization)", Required: true},
+			{Key: "amazon_sp_seller_id", Description: "Your Amazon Seller ID", Required: true, Example: "A1B2C3D4E5F6G7"},
+			{Key: "amazon_sp_region", Description: "Region: na, eu, or fe (default: na)", Required: false, Example: "na"},
+		},
+		SetupGuide: `1. Register as a developer at https://sellercentral.amazon.com/apps/develop
+2. Create a new SP-API application
+3. Select the APIs you need (Orders, Inventory, Reports, etc.)
+4. Note your LWA Client ID and Client Secret
+5. Self-authorize the app to get a Refresh Token
+6. Find your Seller ID in Seller Central > Settings > Account Info
+7. Run:
+   pocket config set amazon_sp_client_id <your-client-id>
+   pocket config set amazon_sp_client_secret <your-client-secret>
+   pocket config set amazon_sp_refresh_token <your-refresh-token>
+   pocket config set amazon_sp_seller_id <your-seller-id>
+
+Optional - Set region (default: na):
+   pocket config set amazon_sp_region eu`,
+		TestCommand: "pocket marketing amazon-sp orders -l 1",
+	},
+	"shopify": {
+		Service: "shopify",
+		Name:    "Shopify",
+		Keys: []KeyInfo{
+			{Key: "shopify_store", Description: "Your Shopify store name (the xxx in xxx.myshopify.com)", Required: true, Example: "my-store"},
+			{Key: "shopify_token", Description: "Admin API access token", Required: true, Example: "shpat_xxxxxxxxxxxx"},
+		},
+		SetupGuide: `1. Go to your Shopify admin: https://YOUR-STORE.myshopify.com/admin
+2. Navigate to Settings > Apps and sales channels > Develop apps
+3. Click "Create an app" and name it
+4. Configure Admin API scopes:
+   - read_orders, read_products, read_customers, read_inventory
+   - write_inventory (if you need inventory-set)
+5. Install the app and copy the Admin API access token
+6. Run:
+   pocket config set shopify_store <your-store-name>
+   pocket config set shopify_token <your-access-token>
+
+Note: The store name is the subdomain part of your .myshopify.com URL.`,
+		TestCommand: "pocket marketing shopify shop",
+	},
+	"facebook-ads": {
+		Service: "facebook-ads",
+		Name:    "Facebook Ads (Meta)",
+		Keys: []KeyInfo{
+			{Key: "facebook_ads_token", Description: "Long-lived access token from Meta Business Manager", Required: true},
+			{Key: "facebook_ads_account_id", Description: "Ad account ID (numeric, without act_ prefix)", Required: true, Example: "123456789"},
+		},
+		SetupGuide: `1. Go to https://business.facebook.com/settings/
+2. Navigate to Users > System Users
+3. Create a system user (or use existing) with 'Admin' role
+4. Click "Generate New Token" for the system user
+5. Select your app, then add permissions:
+   - ads_management, ads_read, business_management
+6. Generate the token (this is a long-lived token)
+7. Find your Ad Account ID in Business Settings > Accounts > Ad Accounts
+8. Run:
+   pocket config set facebook_ads_token <your-token>
+   pocket config set facebook_ads_account_id <your-account-id>
+
+Note: Use OUTCOME-based objectives for campaigns (e.g. OUTCOME_TRAFFIC, OUTCOME_SALES).
+Legacy objectives cause 400 errors on API v24.0+.`,
+		TestCommand: "pocket marketing facebook-ads account",
+	},
 }
 
 func NewSetupCmd() *cobra.Command {

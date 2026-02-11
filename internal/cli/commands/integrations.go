@@ -348,7 +348,7 @@ var allIntegrations = []Integration{
 		Description: "View and create calendar events",
 		AuthNeeded:  true,
 		Commands:    []string{"pocket productivity calendar events", "pocket productivity calendar today", "pocket productivity calendar create"},
-		SetupCmd:    "pocket setup show google",
+		SetupCmd:    "pocket setup show calendar",
 	},
 	{
 		ID:          "notion",
@@ -397,6 +397,35 @@ var allIntegrations = []Integration{
 		AuthNeeded:  true,
 		Commands:    []string{"pocket productivity obsidian vaults", "pocket productivity obsidian notes", "pocket productivity obsidian read [note]", "pocket productivity obsidian write [note] [content]", "pocket productivity obsidian search [query]", "pocket productivity obsidian daily", "pocket productivity obsidian recent"},
 		SetupCmd:    "pocket setup show obsidian",
+	},
+
+	// Marketing - Auth Required
+	{
+		ID:          "facebook-ads",
+		Name:        "Facebook Ads (Meta)",
+		Group:       "marketing",
+		Description: "Manage Facebook/Meta ad campaigns, ad sets, ads, and view performance insights",
+		AuthNeeded:  true,
+		Commands:    []string{"pocket marketing facebook-ads account", "pocket marketing facebook-ads campaigns", "pocket marketing facebook-ads campaign-create", "pocket marketing facebook-ads adsets", "pocket marketing facebook-ads ads", "pocket marketing facebook-ads insights"},
+		SetupCmd:    "pocket setup show facebook-ads",
+	},
+	{
+		ID:          "amazon-sp",
+		Name:        "Amazon Selling Partner",
+		Group:       "marketing",
+		Description: "Manage Amazon seller orders, inventory, and reports via SP-API",
+		AuthNeeded:  true,
+		Commands:    []string{"pocket marketing amazon-sp orders", "pocket marketing amazon-sp order [id]", "pocket marketing amazon-sp order-items [id]", "pocket marketing amazon-sp inventory", "pocket marketing amazon-sp report-create", "pocket marketing amazon-sp report-status [id]"},
+		SetupCmd:    "pocket setup show amazon-sp",
+	},
+	{
+		ID:          "shopify",
+		Name:        "Shopify",
+		Group:       "marketing",
+		Description: "Manage Shopify store: orders, products, customers, and inventory",
+		AuthNeeded:  true,
+		Commands:    []string{"pocket marketing shopify shop", "pocket marketing shopify orders", "pocket marketing shopify order [id]", "pocket marketing shopify products", "pocket marketing shopify product [id]", "pocket marketing shopify customers", "pocket marketing shopify customer-search [query]", "pocket marketing shopify inventory", "pocket marketing shopify inventory-set"},
+		SetupCmd:    "pocket setup show shopify",
 	},
 
 	// System - macOS Only (No Auth)
@@ -520,7 +549,7 @@ func newIntListCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&noAuth, "no-auth", false, "Only show integrations that don't need authentication")
-	cmd.Flags().StringVarP(&group, "group", "g", "", "Filter by group: news, knowledge, utility, dev, social, comms, productivity, system")
+	cmd.Flags().StringVarP(&group, "group", "g", "", "Filter by group: news, knowledge, utility, dev, social, comms, productivity, system, marketing")
 
 	return cmd
 }
@@ -566,6 +595,7 @@ func newIntGroupCmd() *cobra.Command {
 				"comms":        {Name: "Comms", Desc: "Email and messaging", Count: 0},
 				"productivity": {Name: "Productivity", Desc: "Calendar, tasks, notes", Count: 0},
 				"system":       {Name: "System", Desc: "macOS system integrations", Count: 0},
+				"marketing":    {Name: "Marketing", Desc: "Ad platforms and marketing tools", Count: 0},
 			}
 
 			for _, integ := range allIntegrations {
@@ -591,6 +621,7 @@ func newIntGroupCmd() *cobra.Command {
 				{ID: "comms", Name: groups["comms"].Name, Desc: groups["comms"].Desc, Count: groups["comms"].Count},
 				{ID: "productivity", Name: groups["productivity"].Name, Desc: groups["productivity"].Desc, Count: groups["productivity"].Count},
 				{ID: "system", Name: groups["system"].Name, Desc: groups["system"].Desc, Count: groups["system"].Count},
+				{ID: "marketing", Name: groups["marketing"].Name, Desc: groups["marketing"].Desc, Count: groups["marketing"].Count},
 			}
 
 			return output.Print(result)
@@ -709,6 +740,26 @@ func getIntegrationStatus(cfg *config.Config, integ Integration) string {
 		}
 	case "obsidian":
 		if v, _ := config.Get("obsidian_vault"); v != "" {
+			return "ready"
+		}
+	case "facebook-ads":
+		token, _ := config.Get("facebook_ads_token")
+		acctID, _ := config.Get("facebook_ads_account_id")
+		if token != "" && acctID != "" {
+			return "ready"
+		}
+	case "amazon-sp":
+		cid, _ := config.Get("amazon_sp_client_id")
+		secret, _ := config.Get("amazon_sp_client_secret")
+		refresh, _ := config.Get("amazon_sp_refresh_token")
+		seller, _ := config.Get("amazon_sp_seller_id")
+		if cid != "" && secret != "" && refresh != "" && seller != "" {
+			return "ready"
+		}
+	case "shopify":
+		store, _ := config.Get("shopify_store")
+		token, _ := config.Get("shopify_token")
+		if store != "" && token != "" {
 			return "ready"
 		}
 	}

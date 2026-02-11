@@ -42,7 +42,7 @@ func NewCommandsCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&group, "group", "g", "", "Filter by group: social, comms, dev, productivity, news, knowledge, utility, system")
+	cmd.Flags().StringVarP(&group, "group", "g", "", "Filter by group: social, comms, dev, productivity, news, knowledge, utility, system, marketing")
 
 	return cmd
 }
@@ -247,6 +247,34 @@ func getAllCommands() []Group {
 				{Command: "pocket security crtsh lookup", Desc: "Certificate transparency lookup", Args: "[domain]", Flags: "-l limit, --expired"},
 				{Command: "pocket security hibp password", Desc: "Check password in breaches", Args: "[password]"},
 				{Command: "pocket security hibp breaches", Desc: "List public data breaches", Flags: "-l limit"},
+			},
+		},
+		{
+			Name: "marketing",
+			Commands: []Cmd{
+				{Command: "pocket marketing facebook-ads account", Desc: "Get ad account details"},
+				{Command: "pocket marketing facebook-ads campaigns", Desc: "List campaigns", Flags: "-s status, -l limit"},
+				{Command: "pocket marketing facebook-ads campaign-create", Desc: "Create a campaign", Flags: "--name, --objective, --status, --daily-budget, --special-categories"},
+				{Command: "pocket marketing facebook-ads campaign-update", Desc: "Update a campaign", Args: "[campaign-id]", Flags: "--name, --status, --daily-budget"},
+				{Command: "pocket marketing facebook-ads adsets", Desc: "List ad sets", Flags: "-c campaign-id, -s status, -l limit"},
+				{Command: "pocket marketing facebook-ads adset-create", Desc: "Create an ad set", Flags: "--name, --campaign-id, --billing-event, --optimization-goal"},
+				{Command: "pocket marketing facebook-ads ads", Desc: "List ads", Flags: "--adset-id, -s status, -l limit"},
+				{Command: "pocket marketing facebook-ads insights", Desc: "Get performance insights", Flags: "--object-id, --date-start, --date-stop, --level, -f fields"},
+				{Command: "pocket marketing amazon-sp orders", Desc: "List orders", Flags: "-s status, --after, --before, --marketplace, -l limit"},
+				{Command: "pocket marketing amazon-sp order", Desc: "Get order details", Args: "[order-id]"},
+				{Command: "pocket marketing amazon-sp order-items", Desc: "Get items for an order", Args: "[order-id]"},
+				{Command: "pocket marketing amazon-sp inventory", Desc: "List FBA inventory", Flags: "--sku, --marketplace, -l limit"},
+				{Command: "pocket marketing amazon-sp report-create", Desc: "Create a report request", Flags: "--type, --start, --end, --marketplace"},
+				{Command: "pocket marketing amazon-sp report-status", Desc: "Get report status", Args: "[report-id]"},
+				{Command: "pocket marketing shopify shop", Desc: "Get store info"},
+				{Command: "pocket marketing shopify orders", Desc: "List orders", Flags: "-l limit, --status, --since, --financial"},
+				{Command: "pocket marketing shopify order", Desc: "Get order details", Args: "[id]"},
+				{Command: "pocket marketing shopify products", Desc: "List products", Flags: "-l limit, --status, --vendor, --collection"},
+				{Command: "pocket marketing shopify product", Desc: "Get product details", Args: "[id]"},
+				{Command: "pocket marketing shopify customers", Desc: "List customers", Flags: "-l limit"},
+				{Command: "pocket marketing shopify customer-search", Desc: "Search customers", Args: "[query]", Flags: "-l limit"},
+				{Command: "pocket marketing shopify inventory", Desc: "List inventory levels", Flags: "--location, -l limit"},
+				{Command: "pocket marketing shopify inventory-set", Desc: "Set inventory level", Flags: "--item, --location, --available"},
 			},
 		},
 		{

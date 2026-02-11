@@ -104,6 +104,23 @@ type Config struct {
 	ObsidianVault       string `json:"obsidian_vault,omitempty"`
 	ObsidianVaults      string `json:"obsidian_vaults,omitempty"`
 	ObsidianDailyFormat string `json:"obsidian_daily_format,omitempty"`
+
+	// Marketing
+	FacebookAdsToken     string `json:"facebook_ads_token,omitempty"`
+	FacebookAdsAccountID string `json:"facebook_ads_account_id,omitempty"`
+
+	// Marketing - Amazon SP-API
+	AmazonSPClientID     string `json:"amazon_sp_client_id,omitempty"`
+	AmazonSPClientSecret string `json:"amazon_sp_client_secret,omitempty"`
+	AmazonSPRefreshToken string `json:"amazon_sp_refresh_token,omitempty"`
+	AmazonSPSellerID     string `json:"amazon_sp_seller_id,omitempty"`
+	AmazonSPRegion       string `json:"amazon_sp_region,omitempty"`
+	AmazonSPAccessToken  string `json:"amazon_sp_access_token,omitempty"`
+	AmazonSPTokenExpiry  string `json:"amazon_sp_token_expiry,omitempty"`
+
+	// Marketing - Shopify
+	ShopifyStore string `json:"shopify_store,omitempty"`
+	ShopifyToken string `json:"shopify_token,omitempty"`
 }
 
 // Path returns the config file path
@@ -300,6 +317,28 @@ func Set(key, value string) error {
 		cfg.ObsidianVaults = value
 	case "obsidian_daily_format":
 		cfg.ObsidianDailyFormat = value
+	case "facebook_ads_token":
+		cfg.FacebookAdsToken = value
+	case "facebook_ads_account_id":
+		cfg.FacebookAdsAccountID = value
+	case "amazon_sp_client_id":
+		cfg.AmazonSPClientID = value
+	case "amazon_sp_client_secret":
+		cfg.AmazonSPClientSecret = value
+	case "amazon_sp_refresh_token":
+		cfg.AmazonSPRefreshToken = value
+	case "amazon_sp_seller_id":
+		cfg.AmazonSPSellerID = value
+	case "amazon_sp_region":
+		cfg.AmazonSPRegion = value
+	case "amazon_sp_access_token":
+		cfg.AmazonSPAccessToken = value
+	case "amazon_sp_token_expiry":
+		cfg.AmazonSPTokenExpiry = value
+	case "shopify_store":
+		cfg.ShopifyStore = value
+	case "shopify_token":
+		cfg.ShopifyToken = value
 	default:
 		return fmt.Errorf("unknown config key: %s", key)
 	}
@@ -441,6 +480,28 @@ func Get(key string) (string, error) {
 		return cfg.ObsidianVaults, nil
 	case "obsidian_daily_format":
 		return cfg.ObsidianDailyFormat, nil
+	case "facebook_ads_token":
+		return cfg.FacebookAdsToken, nil
+	case "facebook_ads_account_id":
+		return cfg.FacebookAdsAccountID, nil
+	case "amazon_sp_client_id":
+		return cfg.AmazonSPClientID, nil
+	case "amazon_sp_client_secret":
+		return cfg.AmazonSPClientSecret, nil
+	case "amazon_sp_refresh_token":
+		return cfg.AmazonSPRefreshToken, nil
+	case "amazon_sp_seller_id":
+		return cfg.AmazonSPSellerID, nil
+	case "amazon_sp_region":
+		return cfg.AmazonSPRegion, nil
+	case "amazon_sp_access_token":
+		return cfg.AmazonSPAccessToken, nil
+	case "amazon_sp_token_expiry":
+		return cfg.AmazonSPTokenExpiry, nil
+	case "shopify_store":
+		return cfg.ShopifyStore, nil
+	case "shopify_token":
+		return cfg.ShopifyToken, nil
 	default:
 		return "", fmt.Errorf("unknown config key: %s", key)
 	}
@@ -459,68 +520,79 @@ func (c *Config) Redacted() map[string]string {
 	}
 
 	return map[string]string{
-		"x_client_id":           redact(c.XClientID),
-		"x_access_token":        redact(c.XAccessToken),
-		"x_refresh_token":       redact(c.XRefreshToken),
-		"x_token_expiry":        c.XTokenExpiry,
-		"reddit_client_id":      redact(c.RedditClientID),
-		"reddit_access_token":   redact(c.RedditAccessToken),
-		"reddit_refresh_token":  redact(c.RedditRefreshToken),
-		"reddit_token_expiry":   c.RedditTokenExpiry,
-		"mastodon_server":       c.MastodonServer,
-		"mastodon_token":        redact(c.MastodonToken),
-		"youtube_api_key":       redact(c.YouTubeAPIKey),
-		"slack_token":           redact(c.SlackToken),
-		"discord_token":         redact(c.DiscordToken),
-		"telegram_token":        redact(c.TelegramToken),
-		"twilio_sid":            redact(c.TwilioSID),
-		"twilio_token":          redact(c.TwilioToken),
-		"twilio_phone":          c.TwilioPhone,
-		"email_address":         c.EmailAddress,
-		"email_password":        redact(c.EmailPassword),
-		"imap_server":           c.IMAPServer,
-		"imap_port":             c.IMAPPort,
-		"smtp_server":           c.SMTPServer,
-		"smtp_port":             c.SMTPPort,
-		"github_token":          redact(c.GitHubToken),
-		"gitlab_token":          redact(c.GitLabToken),
-		"gitlab_url":            c.GitLabURL,
-		"linear_token":          redact(c.LinearToken),
-		"jira_url":              c.JiraURL,
-		"jira_email":            c.JiraEmail,
-		"jira_token":            redact(c.JiraToken),
-		"vercel_token":          redact(c.VercelToken),
-		"cloudflare_token":      redact(c.CloudflareToken),
-		"sentry_auth_token":     redact(c.SentryAuthToken),
-		"sentry_org":            c.SentryOrg,
-		"redis_url":             c.RedisURL,
-		"redis_password":        redact(c.RedisPassword),
-		"prometheus_url":        c.PrometheusURL,
-		"prometheus_token":      redact(c.PrometheusToken),
-		"notion_token":          redact(c.NotionToken),
-		"todoist_token":         redact(c.TodoistToken),
-		"trello_key":            redact(c.TrelloKey),
-		"trello_token":          redact(c.TrelloToken),
-		"google_cred_path":      c.GoogleCredPath,
-		"google_api_key":        redact(c.GoogleAPIKey),
-		"google_client_id":      redact(c.GoogleClientID),
-		"google_client_secret":  redact(c.GoogleClientSecret),
-		"google_refresh_token":  redact(c.GoogleRefreshToken),
-		"virustotal_api_key":    redact(c.VirusTotalAPIKey),
-		"aws_profile":           c.AWSProfile,
-		"aws_region":            c.AWSRegion,
-		"spotify_client_id":     redact(c.SpotifyClientID),
-		"spotify_client_secret": redact(c.SpotifyClientSecret),
-		"newsapi_key":           redact(c.NewsAPIKey),
-		"alphavantage_key":      redact(c.AlphaVantageKey),
-		"pushover_token":        redact(c.PushoverToken),
-		"pushover_user":         redact(c.PushoverUser),
-		"logseq_graph":          c.LogseqGraph,
-		"logseq_graphs":         c.LogseqGraphs,
-		"logseq_format":         c.LogseqFormat,
-		"obsidian_vault":        c.ObsidianVault,
-		"obsidian_vaults":       c.ObsidianVaults,
-		"obsidian_daily_format": c.ObsidianDailyFormat,
+		"x_client_id":             redact(c.XClientID),
+		"x_access_token":          redact(c.XAccessToken),
+		"x_refresh_token":         redact(c.XRefreshToken),
+		"x_token_expiry":          c.XTokenExpiry,
+		"reddit_client_id":        redact(c.RedditClientID),
+		"reddit_access_token":     redact(c.RedditAccessToken),
+		"reddit_refresh_token":    redact(c.RedditRefreshToken),
+		"reddit_token_expiry":     c.RedditTokenExpiry,
+		"mastodon_server":         c.MastodonServer,
+		"mastodon_token":          redact(c.MastodonToken),
+		"youtube_api_key":         redact(c.YouTubeAPIKey),
+		"slack_token":             redact(c.SlackToken),
+		"discord_token":           redact(c.DiscordToken),
+		"telegram_token":          redact(c.TelegramToken),
+		"twilio_sid":              redact(c.TwilioSID),
+		"twilio_token":            redact(c.TwilioToken),
+		"twilio_phone":            c.TwilioPhone,
+		"email_address":           c.EmailAddress,
+		"email_password":          redact(c.EmailPassword),
+		"imap_server":             c.IMAPServer,
+		"imap_port":               c.IMAPPort,
+		"smtp_server":             c.SMTPServer,
+		"smtp_port":               c.SMTPPort,
+		"github_token":            redact(c.GitHubToken),
+		"gitlab_token":            redact(c.GitLabToken),
+		"gitlab_url":              c.GitLabURL,
+		"linear_token":            redact(c.LinearToken),
+		"jira_url":                c.JiraURL,
+		"jira_email":              c.JiraEmail,
+		"jira_token":              redact(c.JiraToken),
+		"vercel_token":            redact(c.VercelToken),
+		"cloudflare_token":        redact(c.CloudflareToken),
+		"sentry_auth_token":       redact(c.SentryAuthToken),
+		"sentry_org":              c.SentryOrg,
+		"redis_url":               c.RedisURL,
+		"redis_password":          redact(c.RedisPassword),
+		"prometheus_url":          c.PrometheusURL,
+		"prometheus_token":        redact(c.PrometheusToken),
+		"notion_token":            redact(c.NotionToken),
+		"todoist_token":           redact(c.TodoistToken),
+		"trello_key":              redact(c.TrelloKey),
+		"trello_token":            redact(c.TrelloToken),
+		"google_cred_path":        c.GoogleCredPath,
+		"google_api_key":          redact(c.GoogleAPIKey),
+		"google_client_id":        redact(c.GoogleClientID),
+		"google_client_secret":    redact(c.GoogleClientSecret),
+		"google_refresh_token":    redact(c.GoogleRefreshToken),
+		"virustotal_api_key":      redact(c.VirusTotalAPIKey),
+		"aws_profile":             c.AWSProfile,
+		"aws_region":              c.AWSRegion,
+		"spotify_client_id":       redact(c.SpotifyClientID),
+		"spotify_client_secret":   redact(c.SpotifyClientSecret),
+		"newsapi_key":             redact(c.NewsAPIKey),
+		"alphavantage_key":        redact(c.AlphaVantageKey),
+		"pushover_token":          redact(c.PushoverToken),
+		"pushover_user":           redact(c.PushoverUser),
+		"logseq_graph":            c.LogseqGraph,
+		"logseq_graphs":           c.LogseqGraphs,
+		"logseq_format":           c.LogseqFormat,
+		"obsidian_vault":          c.ObsidianVault,
+		"obsidian_vaults":         c.ObsidianVaults,
+		"obsidian_daily_format":   c.ObsidianDailyFormat,
+		"facebook_ads_token":      redact(c.FacebookAdsToken),
+		"facebook_ads_account_id": c.FacebookAdsAccountID,
+		"amazon_sp_client_id":     redact(c.AmazonSPClientID),
+		"amazon_sp_client_secret": redact(c.AmazonSPClientSecret),
+		"amazon_sp_refresh_token": redact(c.AmazonSPRefreshToken),
+		"amazon_sp_seller_id":     c.AmazonSPSellerID,
+		"amazon_sp_region":        c.AmazonSPRegion,
+		"amazon_sp_access_token":  redact(c.AmazonSPAccessToken),
+		"amazon_sp_token_expiry":  c.AmazonSPTokenExpiry,
+		"shopify_store":           c.ShopifyStore,
+		"shopify_token":           redact(c.ShopifyToken),
 	}
 }
 
