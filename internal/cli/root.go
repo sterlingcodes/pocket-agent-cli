@@ -2,6 +2,7 @@ package cli
 
 import (
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/cli/commands"
 	"github.com/unstablemind/pocket/pkg/output"
 )
@@ -52,7 +53,7 @@ func Execute() error {
 	if err := root.Execute(); err != nil {
 		// Only print if not already printed by the command
 		if !output.IsPrinted(err) {
-			output.PrintError("command_failed", err.Error(), nil)
+			_ = output.PrintError("command_failed", err.Error(), nil)
 		}
 		return err
 	}

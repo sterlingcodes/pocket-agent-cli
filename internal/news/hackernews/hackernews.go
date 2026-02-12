@@ -1,6 +1,7 @@
 package hackernews
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"html"
@@ -11,15 +12,15 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
 var htmlTagRe = regexp.MustCompile(`<[^>]*>`)
 
-const (
-	baseURL    = "https://hacker-news.firebaseio.com/v0"
-	maxWorkers = 10
-)
+var baseURL = "https://hacker-news.firebaseio.com/v0"
+
+const maxWorkers = 10
 
 var client = &http.Client{Timeout: 10 * time.Second}
 
@@ -192,7 +193,7 @@ func fetchStories(endpoint string, limit int) error {
 	return output.Print(result)
 }
 
-func fetchItem(id int, commentsLimit int) error {
+func fetchItem(id, commentsLimit int) error {
 	item, err := getItem(id)
 	if err != nil {
 		return output.PrintError("fetch_failed", err.Error(), nil)
@@ -226,7 +227,12 @@ func fetchItem(id int, commentsLimit int) error {
 }
 
 func getStoryIDs(endpoint string) ([]int, error) {
-	resp, err := client.Get(fmt.Sprintf("%s/%s.json", baseURL, endpoint))
+	reqURL := fmt.Sprintf("%s/%s.json", baseURL, endpoint)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, reqURL, http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +246,12 @@ func getStoryIDs(endpoint string) ([]int, error) {
 }
 
 func getItem(id int) (*Item, error) {
-	resp, err := client.Get(fmt.Sprintf("%s/item/%d.json", baseURL, id))
+	reqURL := fmt.Sprintf("%s/item/%d.json", baseURL, id)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, reqURL, http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}

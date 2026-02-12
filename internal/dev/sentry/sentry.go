@@ -9,11 +9,12 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const baseURL = "https://sentry.io/api/0"
+var baseURL = "https://sentry.io/api/0"
 
 var httpClient = &http.Client{Timeout: 30 * time.Second}
 
@@ -27,8 +28,8 @@ type Project struct {
 	Status      string `json:"status"`
 }
 
-// SentryIssue is LLM-friendly Sentry issue output
-type SentryIssue struct {
+// Issue is LLM-friendly Sentry issue output
+type Issue struct {
 	ID        string `json:"id"`
 	Title     string `json:"title"`
 	Culprit   string `json:"culprit,omitempty"`
@@ -206,12 +207,12 @@ func newIssuesCmd() *cobra.Command {
 				return output.PrintError("fetch_failed", err.Error(), nil)
 			}
 
-			result := make([]SentryIssue, 0, limit)
+			result := make([]Issue, 0, limit)
 			for _, i := range raw {
 				if len(result) >= limit {
 					break
 				}
-				result = append(result, toSentryIssue(i))
+				result = append(result, toIssue(i))
 			}
 
 			return output.Print(result)
@@ -338,7 +339,7 @@ func sentryGet(token, apiURL string, result any) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -365,8 +366,8 @@ func sentryGet(token, apiURL string, result any) error {
 	return json.NewDecoder(resp.Body).Decode(result)
 }
 
-func toSentryIssue(i map[string]any) SentryIssue {
-	return SentryIssue{
+func toIssue(i map[string]any) Issue {
+	return Issue{
 		ID:        getString(i, "id"),
 		Title:     getString(i, "title"),
 		Culprit:   getString(i, "culprit"),

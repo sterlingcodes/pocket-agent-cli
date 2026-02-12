@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
@@ -102,14 +103,14 @@ func newIssuesCmd() *cobra.Command {
 				jql = fmt.Sprintf("project = %s", project)
 			}
 			if status != "" {
-				jql += fmt.Sprintf(" AND status = \"%s\"", status)
+				jql += fmt.Sprintf(" AND status = \"%s\"", status) //nolint:gocritic // JQL syntax requires this format
 			}
 			jql += " ORDER BY updated DESC"
 
 			apiURL := fmt.Sprintf("%s/rest/api/3/search?jql=%s&maxResults=%d", baseURL, url.QueryEscape(jql), limit)
 
 			var result map[string]any
-			if err := jiraGet(baseURL, email, token, apiURL, &result); err != nil {
+			if err := jiraGet(email, token, apiURL, &result); err != nil {
 				return output.PrintError("fetch_failed", err.Error(), nil)
 			}
 
@@ -146,7 +147,7 @@ func newIssueCmd() *cobra.Command {
 			apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s", baseURL, args[0])
 
 			var issue map[string]any
-			if err := jiraGet(baseURL, email, token, apiURL, &issue); err != nil {
+			if err := jiraGet(email, token, apiURL, &issue); err != nil {
 				return output.PrintError("fetch_failed", err.Error(), nil)
 			}
 
@@ -170,7 +171,7 @@ func newProjectsCmd() *cobra.Command {
 			apiURL := fmt.Sprintf("%s/rest/api/3/project", baseURL)
 
 			var projects []map[string]any
-			if err := jiraGet(baseURL, email, token, apiURL, &projects); err != nil {
+			if err := jiraGet(email, token, apiURL, &projects); err != nil {
 				return output.PrintError("fetch_failed", err.Error(), nil)
 			}
 
@@ -244,7 +245,7 @@ func newCreateCmd() *cobra.Command {
 			apiURL := fmt.Sprintf("%s/rest/api/3/issue", baseURL)
 
 			var result map[string]any
-			if err := jiraPost(baseURL, email, token, apiURL, body, &result); err != nil {
+			if err := jiraPost(email, token, apiURL, body, &result); err != nil {
 				return output.PrintError("create_failed", err.Error(), nil)
 			}
 
@@ -263,6 +264,7 @@ func newCreateCmd() *cobra.Command {
 	return cmd
 }
 
+//nolint:gocyclo // complex but clear sequential logic
 func newTransitionCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "transition [key] [status]",
@@ -280,7 +282,7 @@ func newTransitionCmd() *cobra.Command {
 			// First, get current issue to capture from_status
 			issueURL := fmt.Sprintf("%s/rest/api/3/issue/%s", baseURL, issueKey)
 			var issue map[string]any
-			if err := jiraGet(baseURL, email, token, issueURL, &issue); err != nil {
+			if err := jiraGet(email, token, issueURL, &issue); err != nil {
 				return output.PrintError("fetch_failed", err.Error(), nil)
 			}
 
@@ -295,7 +297,7 @@ func newTransitionCmd() *cobra.Command {
 			transitionsURL := fmt.Sprintf("%s/rest/api/3/issue/%s/transitions", baseURL, issueKey)
 
 			var transResult map[string]any
-			if err := jiraGet(baseURL, email, token, transitionsURL, &transResult); err != nil {
+			if err := jiraGet(email, token, transitionsURL, &transResult); err != nil {
 				return output.PrintError("fetch_failed", err.Error(), nil)
 			}
 
@@ -338,7 +340,7 @@ func newTransitionCmd() *cobra.Command {
 				},
 			}
 
-			if err := jiraPost(baseURL, email, token, transitionsURL, body, nil); err != nil {
+			if err := jiraPost(email, token, transitionsURL, body, nil); err != nil {
 				return output.PrintError("transition_failed", err.Error(), nil)
 			}
 
@@ -391,11 +393,11 @@ func getCredentials() (baseURL, email, token string, err error) {
 	return baseURL, email, token, nil
 }
 
-func jiraGet(baseURL, email, token, apiURL string, result any) error {
+func jiraGet(email, token, apiURL string, result any) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -415,7 +417,7 @@ func jiraGet(baseURL, email, token, apiURL string, result any) error {
 	return json.NewDecoder(resp.Body).Decode(result)
 }
 
-func jiraPost(baseURL, email, token, apiURL string, body any, result any) error {
+func jiraPost(email, token, apiURL string, body, result any) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -477,6 +479,7 @@ func parseError(resp *http.Response) error {
 	return fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
 }
 
+//nolint:gocyclo // complex but clear sequential logic
 func toIssue(baseURL string, i map[string]any, includeDesc bool) Issue {
 	issue := Issue{
 		Key: getString(i, "key"),

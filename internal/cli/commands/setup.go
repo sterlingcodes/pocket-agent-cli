@@ -2,6 +2,7 @@ package commands
 
 import (
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
@@ -613,15 +614,15 @@ func newSetupListCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List all services and their setup status",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Load()
+			_, err := config.Load()
 			if err != nil {
 				return output.PrintError("config_error", err.Error(), nil)
 			}
 
 			result := make([]ServiceStatus, 0)
 			for _, svc := range services {
-				status := getServiceStatus(cfg, svc)
-				if showAll || status.Status != "ready" {
+				status := getServiceStatus(&svc)
+				if showAll || status.Status != statusReady {
 					result = append(result, status)
 				}
 			}
@@ -639,7 +640,7 @@ func newSetupListCmd() *cobra.Command {
 				}
 			}
 			for _, s := range result {
-				if s.Status == "ready" {
+				if s.Status == statusReady {
 					sortedResult = append(sortedResult, s)
 				}
 			}
@@ -664,7 +665,7 @@ func newSetupShowCmd() *cobra.Command {
 				return output.PrintError("unknown_service", "Unknown service: "+args[0], nil)
 			}
 
-			cfg, err := config.Load()
+			_, err := config.Load()
 			if err != nil {
 				return output.PrintError("config_error", err.Error(), nil)
 			}
@@ -676,7 +677,7 @@ func newSetupShowCmd() *cobra.Command {
 			}
 
 			// Update service status
-			status := getServiceStatus(cfg, svc)
+			status := getServiceStatus(&svc)
 			svc.Status = status.Status
 
 			return output.Print(svc)
@@ -737,8 +738,8 @@ func newSetupSetCmd() *cobra.Command {
 			}
 
 			// Check new status
-			cfg, _ := config.Load()
-			status := getServiceStatus(cfg, svc)
+			_, _ = config.Load()
+			status := getServiceStatus(&svc)
 
 			return output.Print(map[string]any{
 				"status":         "saved",
@@ -753,7 +754,7 @@ func newSetupSetCmd() *cobra.Command {
 	return cmd
 }
 
-func getServiceStatus(cfg *config.Config, svc ServiceInfo) ServiceStatus {
+func getServiceStatus(svc *ServiceInfo) ServiceStatus {
 	missing := 0
 	for _, k := range svc.Keys {
 		val, _ := config.Get(k.Key)
@@ -762,7 +763,7 @@ func getServiceStatus(cfg *config.Config, svc ServiceInfo) ServiceStatus {
 		}
 	}
 
-	status := "ready"
+	status := statusReady
 	if missing == len(svc.Keys) {
 		status = "missing"
 	} else if missing > 0 {

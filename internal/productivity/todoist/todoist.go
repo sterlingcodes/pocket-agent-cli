@@ -10,11 +10,12 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const apiBaseURL = "https://api.todoist.com/api/v1"
+var apiBaseURL = "https://api.todoist.com/api/v1"
 
 func NewCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -85,7 +86,7 @@ func (c *todoistClient) doRequest(method, endpoint string, body interface{}) ([]
 	}
 
 	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("Todoist API error (HTTP %d): %s", resp.StatusCode, string(respBody))
+		return nil, fmt.Errorf("todoist API error (HTTP %d): %s", resp.StatusCode, string(respBody))
 	}
 
 	return respBody, nil
@@ -110,7 +111,8 @@ type task struct {
 
 func formatTasks(tasks []task) []map[string]any {
 	result := make([]map[string]any, len(tasks))
-	for i, t := range tasks {
+	for i := range tasks {
+		t := &tasks[i]
 		item := map[string]any{
 			"id":          t.ID,
 			"content":     t.Content,

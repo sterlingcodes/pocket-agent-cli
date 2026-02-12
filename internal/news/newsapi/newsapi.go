@@ -10,11 +10,12 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const apiBaseURL = "https://newsapi.org/v2"
+var apiBaseURL = "https://newsapi.org/v2"
 
 func NewCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -52,7 +53,7 @@ func (c *newsClient) doRequest(endpoint string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", apiBaseURL+endpoint, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", apiBaseURL+endpoint, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +102,8 @@ type article struct {
 
 func formatArticles(articles []article) []map[string]any {
 	result := make([]map[string]any, len(articles))
-	for i, a := range articles {
+	for i := range articles {
+		a := &articles[i]
 		result[i] = map[string]any{
 			"source":       a.Source.Name,
 			"author":       a.Author,

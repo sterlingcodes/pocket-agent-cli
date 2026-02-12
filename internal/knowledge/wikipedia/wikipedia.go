@@ -10,10 +10,11 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const baseURL = "https://en.wikipedia.org/w/api.php"
+var baseURL = "https://en.wikipedia.org/w/api.php"
 
 var httpClient = &http.Client{Timeout: 30 * time.Second}
 
@@ -212,7 +213,7 @@ func wikiGet(params url.Values, result any) error {
 
 	reqURL := baseURL + "?" + params.Encode()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 	if err != nil {
 		return err
 	}

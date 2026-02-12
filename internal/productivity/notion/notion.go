@@ -10,11 +10,12 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const apiBaseURL = "https://api.notion.com/v1"
+var apiBaseURL = "https://api.notion.com/v1"
 
 func NewCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -89,9 +90,9 @@ func (c *notionClient) doRequest(method, endpoint string, body interface{}) ([]b
 			Code    string `json:"code"`
 		}
 		if json.Unmarshal(respBody, &errResp) == nil && errResp.Message != "" {
-			return nil, fmt.Errorf("Notion API error: %s", errResp.Message)
+			return nil, fmt.Errorf("notion API error: %s", errResp.Message)
 		}
-		return nil, fmt.Errorf("Notion API error (HTTP %d): %s", resp.StatusCode, string(respBody))
+		return nil, fmt.Errorf("notion API error (HTTP %d): %s", resp.StatusCode, string(respBody))
 	}
 
 	return respBody, nil

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
@@ -100,9 +101,9 @@ func (c *mastoClient) doRequest(method, endpoint string, body any) ([]byte, erro
 			Error string `json:"error"`
 		}
 		if json.Unmarshal(respBody, &errResp) == nil && errResp.Error != "" {
-			return nil, fmt.Errorf("Mastodon API error: %s", errResp.Error)
+			return nil, fmt.Errorf("mastodon API error: %s", errResp.Error)
 		}
-		return nil, fmt.Errorf("Mastodon API error (HTTP %d): %s", resp.StatusCode, string(respBody))
+		return nil, fmt.Errorf("mastodon API error (HTTP %d): %s", resp.StatusCode, string(respBody))
 	}
 
 	return respBody, nil
@@ -119,18 +120,19 @@ type status struct {
 		Acct        string `json:"acct"`
 	} `json:"account"`
 	ReblogsCount    int     `json:"reblogs_count"`
-	FavouritesCount int     `json:"favourites_count"`
+	FavouritesCount int     `json:"favourites_count"` //nolint:misspell // Mastodon API uses British English
 	RepliesCount    int     `json:"replies_count"`
 	Reblog          *status `json:"reblog,omitempty"`
 }
 
 func formatStatuses(statuses []status) []map[string]any {
 	result := make([]map[string]any, len(statuses))
-	for i, s := range statuses {
+	for i := range statuses {
+		s := &statuses[i]
 		// Handle boosts
 		content := s
 		if s.Reblog != nil {
-			content = *s.Reblog
+			content = s.Reblog
 		}
 		result[i] = map[string]any{
 			"id":         s.ID,
@@ -140,7 +142,7 @@ func formatStatuses(statuses []status) []map[string]any {
 			"url":        content.URL,
 			"created_at": content.CreatedAt,
 			"reblogs":    content.ReblogsCount,
-			"favourites": content.FavouritesCount,
+			"favourites": content.FavouritesCount, //nolint:misspell // Mastodon API uses British English
 			"replies":    content.RepliesCount,
 			"is_boost":   s.Reblog != nil,
 		}

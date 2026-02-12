@@ -2,6 +2,7 @@ package commands
 
 import (
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/social/mastodon"
 	"github.com/unstablemind/pocket/internal/social/reddit"
 	"github.com/unstablemind/pocket/internal/social/spotify"

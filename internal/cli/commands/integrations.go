@@ -2,8 +2,14 @@ package commands
 
 import (
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
+)
+
+const (
+	statusNoAuth = "no_auth"
+	statusReady  = "ready"
 )
 
 // Integration describes an available integration
@@ -685,10 +691,10 @@ func newIntListCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List all integrations",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, _ := config.Load()
 			result := make([]Integration, 0)
 
-			for _, integ := range allIntegrations {
+			for i := range allIntegrations {
+				integ := allIntegrations[i]
 				// Filter by auth requirement
 				if noAuth && integ.AuthNeeded {
 					continue
@@ -700,7 +706,7 @@ func newIntListCmd() *cobra.Command {
 				}
 
 				// Set status
-				integ.Status = getIntegrationStatus(cfg, integ)
+				integ.Status = getIntegrationStatus(integ)
 				result = append(result, integ)
 			}
 
@@ -719,12 +725,12 @@ func newIntReadyCmd() *cobra.Command {
 		Use:   "ready",
 		Short: "List integrations ready to use (configured or no auth needed)",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, _ := config.Load()
 			result := make([]Integration, 0)
 
-			for _, integ := range allIntegrations {
-				status := getIntegrationStatus(cfg, integ)
-				if status == "ready" || status == "no_auth" {
+			for i := range allIntegrations {
+				integ := allIntegrations[i]
+				status := getIntegrationStatus(integ)
+				if status == statusReady || status == statusNoAuth {
 					integ.Status = status
 					result = append(result, integ)
 				}
@@ -759,7 +765,8 @@ func newIntGroupCmd() *cobra.Command {
 				"marketing":    {Name: "Marketing", Desc: "Ad platforms and marketing tools", Count: 0},
 			}
 
-			for _, integ := range allIntegrations {
+			for i := range allIntegrations {
+				integ := allIntegrations[i]
 				if g, ok := groups[integ.Group]; ok {
 					g.Count++
 					groups[integ.Group] = g
@@ -793,40 +800,41 @@ func newIntGroupCmd() *cobra.Command {
 	return cmd
 }
 
-func getIntegrationStatus(cfg *config.Config, integ Integration) string {
+//nolint:gocyclo,gocritic // complex but clear sequential logic; Integration is read-only value type
+func getIntegrationStatus(integ Integration) string {
 	if !integ.AuthNeeded {
-		return "no_auth"
+		return statusNoAuth
 	}
 
 	// Check if required keys are set
 	switch integ.ID {
 	case "github":
 		if v, _ := config.Get("github_token"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	case "gitlab":
 		if v, _ := config.Get("gitlab_token"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	case "linear":
 		if v, _ := config.Get("linear_token"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	case "twitter":
 		if v, _ := config.Get("x_client_id"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	case "reddit":
 		if v, _ := config.Get("reddit_client_id"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	case "mastodon":
 		if v, _ := config.Get("mastodon_token"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	case "youtube":
 		if v, _ := config.Get("youtube_api_key"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	case "email":
 		addr, _ := config.Get("email_address")
@@ -834,81 +842,81 @@ func getIntegrationStatus(cfg *config.Config, integ Integration) string {
 		imap, _ := config.Get("imap_server")
 		smtp, _ := config.Get("smtp_server")
 		if addr != "" && pass != "" && imap != "" && smtp != "" {
-			return "ready"
+			return statusReady
 		}
 	case "slack":
 		if v, _ := config.Get("slack_token"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	case "discord":
 		if v, _ := config.Get("discord_token"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	case "telegram":
 		if v, _ := config.Get("telegram_token"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	case "twilio":
 		sid, _ := config.Get("twilio_sid")
 		token, _ := config.Get("twilio_token")
 		phone, _ := config.Get("twilio_phone")
 		if sid != "" && token != "" && phone != "" {
-			return "ready"
+			return statusReady
 		}
 	case "calendar":
 		if v, _ := config.Get("google_cred_path"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	case "notion":
 		if v, _ := config.Get("notion_token"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	case "todoist":
 		if v, _ := config.Get("todoist_token"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	case "newsapi":
 		if v, _ := config.Get("newsapi_key"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	case "stocks":
 		if v, _ := config.Get("alphavantage_key"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	case "jira":
 		url, _ := config.Get("jira_url")
 		email, _ := config.Get("jira_email")
 		token, _ := config.Get("jira_token")
 		if url != "" && email != "" && token != "" {
-			return "ready"
+			return statusReady
 		}
 	case "cloudflare":
 		if v, _ := config.Get("cloudflare_token"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	case "vercel":
 		if v, _ := config.Get("vercel_token"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	case "trello":
 		key, _ := config.Get("trello_key")
 		token, _ := config.Get("trello_token")
 		if key != "" && token != "" {
-			return "ready"
+			return statusReady
 		}
 	case "logseq":
 		if v, _ := config.Get("logseq_graph"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	case "obsidian":
 		if v, _ := config.Get("obsidian_vault"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	case "facebook-ads":
 		token, _ := config.Get("facebook_ads_token")
 		acctID, _ := config.Get("facebook_ads_account_id")
 		if token != "" && acctID != "" {
-			return "ready"
+			return statusReady
 		}
 	case "amazon-sp":
 		cid, _ := config.Get("amazon_sp_client_id")
@@ -916,49 +924,49 @@ func getIntegrationStatus(cfg *config.Config, integ Integration) string {
 		refresh, _ := config.Get("amazon_sp_refresh_token")
 		seller, _ := config.Get("amazon_sp_seller_id")
 		if cid != "" && secret != "" && refresh != "" && seller != "" {
-			return "ready"
+			return statusReady
 		}
 	case "shopify":
 		store, _ := config.Get("shopify_store")
 		token, _ := config.Get("shopify_token")
 		if store != "" && token != "" {
-			return "ready"
+			return statusReady
 		}
 	case "spotify":
 		cid, _ := config.Get("spotify_client_id")
 		secret, _ := config.Get("spotify_client_secret")
 		if cid != "" && secret != "" {
-			return "ready"
+			return statusReady
 		}
 	case "sentry":
 		if v, _ := config.Get("sentry_auth_token"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	case "s3":
 		profile, _ := config.Get("aws_profile")
 		region, _ := config.Get("aws_region")
 		if profile != "" && region != "" {
-			return "ready"
+			return statusReady
 		}
 	case "redis":
 		if v, _ := config.Get("redis_url"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	case "prometheus":
 		if v, _ := config.Get("prometheus_url"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	case "virustotal":
 		if v, _ := config.Get("virustotal_api_key"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	case "gdrive":
 		if v, _ := config.Get("google_api_key"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	case "gsheets":
 		if v, _ := config.Get("google_api_key"); v != "" {
-			return "ready"
+			return statusReady
 		}
 	}
 

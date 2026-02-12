@@ -36,7 +36,7 @@ func writeTestConfig(t *testing.T, values map[string]string) {
 	if err != nil {
 		t.Fatalf("marshal config: %v", err)
 	}
-	if err := os.WriteFile(testConfigPath, data, 0600); err != nil {
+	if err := os.WriteFile(testConfigPath, data, 0o600); err != nil {
 		t.Fatalf("write config: %v", err)
 	}
 }
@@ -92,7 +92,7 @@ func TestDoGetSuccess(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"shop": map[string]any{
 				"id":   float64(12345),
 				"name": "Test Store",
@@ -119,7 +119,7 @@ func TestDoGetSuccess(t *testing.T) {
 func TestDoGetHTTPError(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(401)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errors": "Not authorized",
 		})
 	}))
@@ -156,7 +156,7 @@ func TestDoPostSuccess(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"inventory_level": map[string]any{
 				"inventory_item_id": float64(808950810),
 				"location_id":       float64(905684977),
@@ -197,7 +197,7 @@ func TestDoPutSuccess(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"product": map[string]any{
 				"id":    float64(123),
 				"title": "Updated Product",
@@ -234,7 +234,7 @@ func TestDoDeleteSuccess(t *testing.T) {
 		}
 
 		w.WriteHeader(200)
-		w.Write([]byte("{}"))
+		_, _ = w.Write([]byte("{}"))
 	}))
 	defer ts.Close()
 

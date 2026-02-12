@@ -9,10 +9,14 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-var httpClient = &http.Client{Timeout: 30 * time.Second}
+var (
+	httpClient = &http.Client{Timeout: 30 * time.Second}
+	baseURL    = "https://wttr.in"
+)
 
 // Current is LLM-friendly current weather
 type Current struct {
@@ -93,14 +97,15 @@ func newForecastCmd() *cobra.Command {
 	return cmd
 }
 
+//nolint:gocyclo // complex but clear sequential logic
 func fetchWeather(location string, forecastDays int) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// Using wttr.in JSON API
-	reqURL := fmt.Sprintf("https://wttr.in/%s?format=j1", url.PathEscape(location))
+	reqURL := fmt.Sprintf("%s/%s?format=j1", baseURL, url.PathEscape(location))
 
-	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 	if err != nil {
 		return output.PrintError("fetch_failed", err.Error(), nil)
 	}
@@ -240,6 +245,6 @@ func fetchWeather(location string, forecastDays int) error {
 
 func atoi(s string) int {
 	var n int
-	fmt.Sscanf(s, "%d", &n)
+	_, _ = fmt.Sscanf(s, "%d", &n)
 	return n
 }

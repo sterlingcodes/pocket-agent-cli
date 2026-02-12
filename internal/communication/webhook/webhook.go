@@ -11,13 +11,16 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
 var httpClient = &http.Client{Timeout: 30 * time.Second}
 
-// WebhookResponse represents the response from a webhook call
-type WebhookResponse struct {
+const methodGet = "GET"
+
+// Response represents the response from a webhook call
+type Response struct {
 	Status     string `json:"status"`
 	StatusCode int    `json:"status_code"`
 	URL        string `json:"url"`
@@ -71,10 +74,10 @@ func newSendCmd() *cobra.Command {
 			// Validate method
 			method = strings.ToUpper(method)
 			validMethods := map[string]bool{
-				"GET":    true,
-				"POST":   true,
-				"PUT":    true,
-				"DELETE": true,
+				methodGet: true,
+				"POST":    true,
+				"PUT":     true,
+				"DELETE":  true,
 			}
 			if !validMethods[method] {
 				return output.PrintError("invalid_method", "Method must be GET, POST, PUT, or DELETE", map[string]any{
@@ -83,7 +86,7 @@ func newSendCmd() *cobra.Command {
 			}
 
 			// Validate JSON data for non-GET requests
-			if method != "GET" && contentType == "application/json" {
+			if method != methodGet && contentType == "application/json" {
 				var js json.RawMessage
 				if err := json.Unmarshal([]byte(data), &js); err != nil {
 					return output.PrintError("invalid_json", "Data is not valid JSON", map[string]any{
@@ -95,7 +98,7 @@ func newSendCmd() *cobra.Command {
 
 			// Build request
 			var body io.Reader
-			if method != "GET" {
+			if method != methodGet {
 				body = bytes.NewBufferString(data)
 			}
 
@@ -110,7 +113,7 @@ func newSendCmd() *cobra.Command {
 			}
 
 			// Set content type
-			if method != "GET" {
+			if method != methodGet {
 				req.Header.Set("Content-Type", contentType)
 			}
 
@@ -151,7 +154,7 @@ func newSendCmd() *cobra.Command {
 				status = "error"
 			}
 
-			return output.Print(WebhookResponse{
+			return output.Print(Response{
 				Status:     status,
 				StatusCode: resp.StatusCode,
 				URL:        url,
@@ -194,7 +197,7 @@ func newSlackCmd() *cobra.Command {
 					iconEmoji = ":" + iconEmoji
 				}
 				if !strings.HasSuffix(iconEmoji, ":") {
-					iconEmoji = iconEmoji + ":"
+					iconEmoji += ":"
 				}
 				payload.IconEmoji = iconEmoji
 			}

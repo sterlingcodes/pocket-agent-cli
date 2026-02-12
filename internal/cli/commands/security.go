@@ -2,6 +2,7 @@ package commands
 
 import (
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/security/crtsh"
 	"github.com/unstablemind/pocket/internal/security/hibp"
 	"github.com/unstablemind/pocket/internal/security/shodan"

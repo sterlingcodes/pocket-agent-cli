@@ -21,7 +21,7 @@ func captureStdout(fn func()) string {
 	os.Stdout = old
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, _ = io.Copy(&buf, r)
 	return buf.String()
 }
 
@@ -30,7 +30,7 @@ func TestPrintJSON(t *testing.T) {
 	defer SetFormat("json")
 
 	out := captureStdout(func() {
-		Print(map[string]string{"key": "value"})
+		_ = Print(map[string]string{"key": "value"})
 	})
 
 	var resp Response
@@ -59,7 +59,7 @@ func TestPrintText(t *testing.T) {
 	defer SetFormat("json")
 
 	out := captureStdout(func() {
-		Print("hello world")
+		_ = Print("hello world")
 	})
 
 	if strings.TrimSpace(out) != "hello world" {
@@ -72,7 +72,7 @@ func TestPrintTextMap(t *testing.T) {
 	defer SetFormat("json")
 
 	out := captureStdout(func() {
-		Print(map[string]string{"name": "test"})
+		_ = Print(map[string]string{"name": "test"})
 	})
 
 	if !strings.Contains(out, "name: test") {
@@ -85,7 +85,7 @@ func TestPrintErrorJSON(t *testing.T) {
 	defer SetFormat("json")
 
 	out := captureStdout(func() {
-		PrintError("test_code", "test message", map[string]string{"detail": "info"})
+		_ = PrintError("test_code", "test message", map[string]string{"detail": "info"})
 	})
 
 	var resp Response
@@ -199,7 +199,7 @@ func TestPrintJSONVerboseIndent(t *testing.T) {
 	}()
 
 	out := captureStdout(func() {
-		Print(map[string]string{"key": "val"})
+		_ = Print(map[string]string{"key": "val"})
 	})
 
 	// Verbose mode should produce indented JSON (multi-line)
@@ -214,7 +214,7 @@ func TestPrintNilData(t *testing.T) {
 	defer SetFormat("json")
 
 	out := captureStdout(func() {
-		Print(nil)
+		_ = Print(nil)
 	})
 
 	var resp Response
@@ -231,7 +231,7 @@ func TestPrintErrorNilDetails(t *testing.T) {
 	defer SetFormat("json")
 
 	out := captureStdout(func() {
-		PrintError("err", "message", nil)
+		_ = PrintError("err", "message", nil)
 	})
 
 	var resp Response
@@ -248,7 +248,7 @@ func TestPrintTableEmpty(t *testing.T) {
 	defer SetFormat("json")
 
 	out := captureStdout(func() {
-		Print([]map[string]any{})
+		_ = Print([]map[string]any{})
 	})
 
 	if out != "" {
@@ -261,7 +261,7 @@ func TestPrintDefaultFallsBackToJSON(t *testing.T) {
 	defer SetFormat("json")
 
 	out := captureStdout(func() {
-		Print(map[string]string{"k": "v"})
+		_ = Print(map[string]string{"k": "v"})
 	})
 
 	var resp Response

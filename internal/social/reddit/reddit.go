@@ -14,13 +14,14 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const (
+var (
 	authURL      = "https://www.reddit.com/api/v1/authorize"
-	tokenURL     = "https://www.reddit.com/api/v1/access_token"
+	tokenURL     = "https://www.reddit.com/api/v1/access_token" //nolint:gosec // OAuth endpoint URL, not a credential
 	apiBaseURL   = "https://oauth.reddit.com"
 	userAgent    = "pocket-cli/1.0"
 	callbackPort = "8766"
@@ -142,18 +143,18 @@ func refreshAccessToken(clientID, refreshToken string) (string, error) {
 
 	// Store new access token (Reddit refresh tokens don't rotate)
 	expiry := time.Now().Add(time.Duration(tokenResp.ExpiresIn-60) * time.Second)
-	config.Set("reddit_access_token", tokenResp.AccessToken)
-	config.Set("reddit_token_expiry", expiry.Format(time.RFC3339))
+	_ = config.Set("reddit_access_token", tokenResp.AccessToken)
+	_ = config.Set("reddit_token_expiry", expiry.Format(time.RFC3339))
 
 	return tokenResp.AccessToken, nil
 }
 
-func (c *redditClient) doRequest(method, endpoint string) ([]byte, error) {
+func (c *redditClient) doRequest(endpoint string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	reqURL := apiBaseURL + endpoint
-	req, err := http.NewRequestWithContext(ctx, method, reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +174,7 @@ func (c *redditClient) doRequest(method, endpoint string) ([]byte, error) {
 	}
 
 	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("Reddit API error (HTTP %d): %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("reddit API error (HTTP %d): %s", resp.StatusCode, string(body))
 	}
 
 	return body, nil
@@ -242,14 +243,14 @@ func newAuthCmd() *cobra.Command {
 				fmt.Fprintf(w, "Authorization successful! You can close this tab and return to the terminal.")
 			})
 
-			server := &http.Server{Handler: mux}
-			go server.Serve(listener)
+			server := &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second}
+			go func() { _ = server.Serve(listener) }()
 
 			// Open browser
 			fmt.Println("Opening browser for Reddit authorization...")
 			fmt.Println("If the browser doesn't open, visit this URL:")
 			fmt.Println(authorizationURL)
-			exec.Command("open", authorizationURL).Start()
+			_ = exec.Command("open", authorizationURL).Start()
 
 			// Wait for callback
 			fmt.Println("\nWaiting for authorization...")
@@ -320,9 +321,9 @@ func newAuthCmd() *cobra.Command {
 
 			// Store tokens
 			expiry := time.Now().Add(time.Duration(tokenResp.ExpiresIn-60) * time.Second)
-			config.Set("reddit_access_token", tokenResp.AccessToken)
-			config.Set("reddit_refresh_token", tokenResp.RefreshToken)
-			config.Set("reddit_token_expiry", expiry.Format(time.RFC3339))
+			_ = config.Set("reddit_access_token", tokenResp.AccessToken)
+			_ = config.Set("reddit_refresh_token", tokenResp.RefreshToken)
+			_ = config.Set("reddit_token_expiry", expiry.Format(time.RFC3339))
 
 			return output.Print(map[string]any{
 				"status": "authenticated",
@@ -363,8 +364,8 @@ func parseListingResponse(body []byte) ([]redditPost, error) {
 	}
 
 	posts := make([]redditPost, len(listing.Data.Children))
-	for i, child := range listing.Data.Children {
-		posts[i] = child.Data
+	for i := range listing.Data.Children {
+		posts[i] = listing.Data.Children[i].Data
 	}
 
 	return posts, nil
@@ -372,7 +373,8 @@ func parseListingResponse(body []byte) ([]redditPost, error) {
 
 func formatPosts(posts []redditPost) []map[string]any {
 	result := make([]map[string]any, len(posts))
-	for i, p := range posts {
+	for i := range posts {
+		p := &posts[i]
 		result[i] = map[string]any{
 			"id":        p.ID,
 			"title":     p.Title,
@@ -403,7 +405,7 @@ func newFeedCmd() *cobra.Command {
 			}
 
 			endpoint := fmt.Sprintf("/%s?limit=%d", sort, limit)
-			body, err := client.doRequest("GET", endpoint)
+			body, err := client.doRequest(endpoint)
 			if err != nil {
 				return output.PrintError("request_failed", err.Error(), nil)
 			}
@@ -447,7 +449,7 @@ func newSubredditCmd() *cobra.Command {
 				endpoint += "&t=" + timeFrame
 			}
 
-			body, err := client.doRequest("GET", endpoint)
+			body, err := client.doRequest(endpoint)
 			if err != nil {
 				return output.PrintError("request_failed", err.Error(), nil)
 			}
@@ -495,7 +497,7 @@ func newSearchCmd() *cobra.Command {
 					strings.TrimPrefix(subreddit, "r/"), query, limit, sort, timeFrame)
 			}
 
-			body, err := client.doRequest("GET", endpoint)
+			body, err := client.doRequest(endpoint)
 			if err != nil {
 				return output.PrintError("request_failed", err.Error(), nil)
 			}
@@ -537,7 +539,7 @@ func newUserCmd() *cobra.Command {
 			username := strings.TrimPrefix(args[0], "u/")
 
 			// Get user info
-			aboutBody, err := client.doRequest("GET", "/user/"+username+"/about")
+			aboutBody, err := client.doRequest("/user/" + username + "/about")
 			if err != nil {
 				return output.PrintError("request_failed", err.Error(), nil)
 			}
@@ -557,7 +559,7 @@ func newUserCmd() *cobra.Command {
 			}
 
 			// Get recent posts
-			postsBody, err := client.doRequest("GET", fmt.Sprintf("/user/%s/submitted?limit=%d", username, limit))
+			postsBody, err := client.doRequest(fmt.Sprintf("/user/%s/submitted?limit=%d", username, limit))
 			if err != nil {
 				return output.PrintError("request_failed", err.Error(), nil)
 			}
@@ -599,7 +601,7 @@ func newCommentsCmd() *cobra.Command {
 			postID := args[0]
 			endpoint := fmt.Sprintf("/comments/%s?limit=%d&sort=%s", postID, limit, sort)
 
-			body, err := client.doRequest("GET", endpoint)
+			body, err := client.doRequest(endpoint)
 			if err != nil {
 				return output.PrintError("request_failed", err.Error(), nil)
 			}

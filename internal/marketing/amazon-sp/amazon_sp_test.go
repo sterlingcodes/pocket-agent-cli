@@ -37,7 +37,7 @@ func writeTestConfig(t *testing.T, values map[string]string) {
 	if err != nil {
 		t.Fatalf("marshal config: %v", err)
 	}
-	if err := os.WriteFile(testConfigPath, data, 0600); err != nil {
+	if err := os.WriteFile(testConfigPath, data, 0o600); err != nil {
 		t.Fatalf("write config: %v", err)
 	}
 }
@@ -99,7 +99,7 @@ func TestEnsureAccessToken(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"access_token": "new_access_token",
 			"expires_in":   float64(3600),
 		})
@@ -162,7 +162,7 @@ func TestDoGetSuccess(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"payload": map[string]any{
 				"Orders": []any{
 					map[string]any{"AmazonOrderId": "111-222-333"},
@@ -192,7 +192,7 @@ func TestDoGetSuccess(t *testing.T) {
 func TestDoGetHTTPError(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errors": []any{
 				map[string]any{
 					"code":    "InvalidInput",
@@ -242,7 +242,7 @@ func TestDoPostSuccess(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"reportId": "RPT-123"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"reportId": "RPT-123"})
 	}))
 	defer ts.Close()
 

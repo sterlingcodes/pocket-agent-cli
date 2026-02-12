@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 )
 
@@ -35,7 +36,7 @@ func writeTestConfig(t *testing.T, values map[string]string) {
 	if err != nil {
 		t.Fatalf("marshal config: %v", err)
 	}
-	if err := os.WriteFile(testConfigPath, data, 0600); err != nil {
+	if err := os.WriteFile(testConfigPath, data, 0o600); err != nil {
 		t.Fatalf("write config: %v", err)
 	}
 }
@@ -89,7 +90,7 @@ var configKeysForIntegration = map[string][]string{
 // returns "needs_setup" (not falling through to the default).
 func TestAllAuthIntegrationsHaveStatusCheck(t *testing.T) {
 	clearTestConfig(t)
-	cfg, err := config.Load()
+	_, err := config.Load()
 	if err != nil {
 		t.Fatalf("load config: %v", err)
 	}
@@ -99,7 +100,7 @@ func TestAllAuthIntegrationsHaveStatusCheck(t *testing.T) {
 			continue
 		}
 
-		status := getIntegrationStatus(cfg, integ)
+		status := getIntegrationStatus(integ)
 		if status != "needs_setup" {
 			t.Errorf("integration %q: expected 'needs_setup' with empty config, got %q", integ.ID, status)
 		}
@@ -127,12 +128,12 @@ func TestAllAuthIntegrationsReturnReady(t *testing.T) {
 		}
 		writeTestConfig(t, cfgValues)
 
-		cfg, err := config.Load()
+		_, err := config.Load()
 		if err != nil {
 			t.Fatalf("load config for %q: %v", integ.ID, err)
 		}
 
-		status := getIntegrationStatus(cfg, integ)
+		status := getIntegrationStatus(integ)
 		if status != "ready" {
 			t.Errorf("integration %q: expected 'ready' with keys %v set, got %q", integ.ID, keys, status)
 		}
@@ -145,7 +146,7 @@ func TestAllAuthIntegrationsReturnReady(t *testing.T) {
 // AuthNeeded==false return "no_auth" from getIntegrationStatus.
 func TestNoAuthIntegrationsReturnNoAuth(t *testing.T) {
 	clearTestConfig(t)
-	cfg, err := config.Load()
+	_, err := config.Load()
 	if err != nil {
 		t.Fatalf("load config: %v", err)
 	}
@@ -155,7 +156,7 @@ func TestNoAuthIntegrationsReturnNoAuth(t *testing.T) {
 			continue
 		}
 
-		status := getIntegrationStatus(cfg, integ)
+		status := getIntegrationStatus(integ)
 		if status != "no_auth" {
 			t.Errorf("integration %q (AuthNeeded=false): expected 'no_auth', got %q", integ.ID, status)
 		}
@@ -220,16 +221,16 @@ func TestAllCommandGroupsRegistered(t *testing.T) {
 	// Each group constructor must return a command with the expected Use name.
 	// This proves all group commands exist and can be registered on root.
 	wantGroups := map[string]func() *cobra.Command{
-		"social":       func() *cobra.Command { return NewSocialCmd() },
-		"comms":        func() *cobra.Command { return NewCommsCmd() },
-		"dev":          func() *cobra.Command { return NewDevCmd() },
-		"productivity": func() *cobra.Command { return NewProductivityCmd() },
-		"news":         func() *cobra.Command { return NewNewsCmd() },
-		"knowledge":    func() *cobra.Command { return NewKnowledgeCmd() },
-		"utility":      func() *cobra.Command { return NewUtilityCmd() },
-		"system":       func() *cobra.Command { return NewSystemCmd() },
-		"security":     func() *cobra.Command { return NewSecurityCmd() },
-		"marketing":    func() *cobra.Command { return NewMarketingCmd() },
+		"social":       NewSocialCmd,
+		"comms":        NewCommsCmd,
+		"dev":          NewDevCmd,
+		"productivity": NewProductivityCmd,
+		"news":         NewNewsCmd,
+		"knowledge":    NewKnowledgeCmd,
+		"utility":      NewUtilityCmd,
+		"system":       NewSystemCmd,
+		"security":     NewSecurityCmd,
+		"marketing":    NewMarketingCmd,
 	}
 
 	for name, constructor := range wantGroups {

@@ -10,12 +10,14 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-var httpClient = &http.Client{Timeout: 30 * time.Second}
-
-const baseURL = "http://worldtimeapi.org/api"
+var (
+	httpClient = &http.Client{Timeout: 30 * time.Second}
+	baseURL    = "http://worldtimeapi.org/api"
+)
 
 // TimeInfo is LLM-friendly timezone information
 type TimeInfo struct {
@@ -88,7 +90,7 @@ func fetchTimezone(reqURL string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 	if err != nil {
 		return output.PrintError("fetch_failed", err.Error(), nil)
 	}
@@ -145,7 +147,7 @@ func listTimezones() error {
 
 	reqURL := fmt.Sprintf("%s/timezone", baseURL)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 	if err != nil {
 		return output.PrintError("fetch_failed", err.Error(), nil)
 	}

@@ -10,11 +10,12 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const baseURL = "https://api.cloudflare.com/client/v4"
+var baseURL = "https://api.cloudflare.com/client/v4"
 
 var httpClient = &http.Client{Timeout: 30 * time.Second}
 
@@ -263,17 +264,18 @@ func newPurgeCmd() *cobra.Command {
 			url := fmt.Sprintf("%s/zones/%s/purge_cache", baseURL, args[0])
 
 			var body map[string]any
-			if purgeAll {
+			switch {
+			case purgeAll:
 				body = map[string]any{"purge_everything": true}
-			} else if len(urls) > 0 {
+			case len(urls) > 0:
 				body = map[string]any{"files": urls}
-			} else if len(tags) > 0 {
+			case len(tags) > 0:
 				body = map[string]any{"tags": tags}
-			} else if len(hosts) > 0 {
+			case len(hosts) > 0:
 				body = map[string]any{"hosts": hosts}
-			} else if len(prefixes) > 0 {
+			case len(prefixes) > 0:
 				body = map[string]any{"prefixes": prefixes}
-			} else {
+			default:
 				return output.PrintError("missing_option", "Specify --all, --urls, --tags, --hosts, or --prefixes", nil)
 			}
 
@@ -383,7 +385,7 @@ func cfGet(token, url string, result any) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -399,7 +401,7 @@ func cfGet(token, url string, result any) error {
 
 	if resp.StatusCode >= 400 {
 		var errResp cfResponse
-		json.NewDecoder(resp.Body).Decode(&errResp)
+		_ = json.NewDecoder(resp.Body).Decode(&errResp)
 		if len(errResp.Errors) > 0 {
 			return fmt.Errorf("%s", formatErrors(errResp.Errors))
 		}
@@ -409,7 +411,7 @@ func cfGet(token, url string, result any) error {
 	return json.NewDecoder(resp.Body).Decode(result)
 }
 
-func cfPost(token, url string, body any, result any) error {
+func cfPost(token, url string, body, result any) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -434,7 +436,7 @@ func cfPost(token, url string, body any, result any) error {
 
 	if resp.StatusCode >= 400 {
 		var errResp cfResponse
-		json.NewDecoder(resp.Body).Decode(&errResp)
+		_ = json.NewDecoder(resp.Body).Decode(&errResp)
 		if len(errResp.Errors) > 0 {
 			return fmt.Errorf("%s", formatErrors(errResp.Errors))
 		}
@@ -568,6 +570,7 @@ func parsePurgeResult(raw json.RawMessage) (PurgeResult, error) {
 	}, nil
 }
 
+//nolint:gocyclo // complex but clear sequential logic
 func parseAnalytics(raw json.RawMessage, since, until string) (Analytics, error) {
 	var data map[string]any
 	if err := json.Unmarshal(raw, &data); err != nil {

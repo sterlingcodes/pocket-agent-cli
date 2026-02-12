@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
@@ -57,7 +58,7 @@ func NewCmd() *cobra.Command {
 }
 
 // getGraphPath returns the path to the default graph or specified graph
-func getGraphPath(graphName string) (string, string, error) {
+func getGraphPath(graphName string) (graphPath, format string, err error) {
 	// If a specific graph is requested, look it up in graphs list
 	if graphName != "" {
 		graphsJSON, _ := config.Get("logseq_graphs")
@@ -73,7 +74,7 @@ func getGraphPath(graphName string) (string, string, error) {
 		}
 		// If not in list, assume it's a path
 		if _, err := os.Stat(graphName); err == nil {
-			format, _ := config.Get("logseq_format")
+			format, _ = config.Get("logseq_format")
 			if format == "" {
 				format = "md"
 			}
@@ -83,7 +84,7 @@ func getGraphPath(graphName string) (string, string, error) {
 	}
 
 	// Use default graph
-	graphPath, err := config.Get("logseq_graph")
+	graphPath, err = config.Get("logseq_graph")
 	if err != nil {
 		return "", "", err
 	}
@@ -91,7 +92,7 @@ func getGraphPath(graphName string) (string, string, error) {
 		return "", "", fmt.Errorf("logseq_graph not configured (use: pocket config set logseq_graph /path/to/graph)")
 	}
 
-	format, _ := config.Get("logseq_format")
+	format, _ = config.Get("logseq_format")
 	if format == "" {
 		format = "md"
 	}
@@ -199,7 +200,7 @@ func listPages(pagesDir, ext string, limit int) ([]Page, error) {
 		return nil, fmt.Errorf("failed to read pages directory: %w", err)
 	}
 
-	var pages []Page
+	pages := make([]Page, 0, len(entries))
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
@@ -354,7 +355,7 @@ func findPage(graphPath, pageName, format string) (string, error) {
 // newWriteCmd creates or updates a page
 func newWriteCmd() *cobra.Command {
 	var graphName string
-	var append bool
+	var appendMode bool
 
 	cmd := &cobra.Command{
 		Use:   "write [page] [content]",
@@ -373,7 +374,7 @@ func newWriteCmd() *cobra.Command {
 			ext := getFileExtension(format)
 
 			// Ensure pages directory exists
-			if err := os.MkdirAll(pagesDir, 0755); err != nil {
+			if err := os.MkdirAll(pagesDir, 0o755); err != nil {
 				return output.PrintError("write_error", "failed to create pages directory", err.Error())
 			}
 
@@ -381,7 +382,7 @@ func newWriteCmd() *cobra.Command {
 			pagePath := filepath.Join(pagesDir, encodedName+ext)
 
 			var finalContent string
-			if append {
+			if appendMode {
 				// Read existing content
 				existing, err := os.ReadFile(pagePath)
 				if err != nil && !os.IsNotExist(err) {
@@ -392,12 +393,12 @@ func newWriteCmd() *cobra.Command {
 				finalContent = content
 			}
 
-			if err := os.WriteFile(pagePath, []byte(finalContent), 0644); err != nil {
+			if err := os.WriteFile(pagePath, []byte(finalContent), 0o600); err != nil {
 				return output.PrintError("write_error", err.Error(), nil)
 			}
 
 			action := "created"
-			if append {
+			if appendMode {
 				action = "appended"
 			}
 
@@ -411,7 +412,7 @@ func newWriteCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&graphName, "graph", "g", "", "Graph name or path")
-	cmd.Flags().BoolVarP(&append, "append", "a", false, "Append to existing content")
+	cmd.Flags().BoolVarP(&appendMode, "append", "a", false, "Append to existing content")
 
 	return cmd
 }
@@ -571,7 +572,7 @@ func newJournalCmd() *cobra.Command {
 			// If content is provided, write to journal
 			if content != "" {
 				// Ensure journals directory exists
-				if err := os.MkdirAll(journalsDir, 0755); err != nil {
+				if err := os.MkdirAll(journalsDir, 0o755); err != nil {
 					return output.PrintError("write_error", "failed to create journals directory", err.Error())
 				}
 
@@ -582,7 +583,7 @@ func newJournalCmd() *cobra.Command {
 					finalContent = content
 				}
 
-				if err := os.WriteFile(journalPath, []byte(finalContent), 0644); err != nil {
+				if err := os.WriteFile(journalPath, []byte(finalContent), 0o600); err != nil {
 					return output.PrintError("write_error", err.Error(), nil)
 				}
 
@@ -715,7 +716,7 @@ func listPagesWithCutoff(dir, ext string, cutoff time.Time) ([]Page, error) {
 		return nil, err
 	}
 
-	var pages []Page
+	pages := make([]Page, 0, len(entries))
 	for _, entry := range entries {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ext) {
 			continue

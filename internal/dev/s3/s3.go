@@ -3,12 +3,14 @@ package s3
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
@@ -27,13 +29,13 @@ type Bucket struct {
 
 // ListResult holds directory listing results
 type ListResult struct {
-	Path    string     `json:"path"`
-	Objects []S3Object `json:"objects"`
-	Count   int        `json:"count"`
+	Path    string   `json:"path"`
+	Objects []Object `json:"objects"`
+	Count   int      `json:"count"`
 }
 
-// S3Object holds a single S3 object entry
-type S3Object struct {
+// Object holds a single S3 object entry
+type Object struct {
 	Key          string `json:"key"`
 	Size         string `json:"size,omitempty"`
 	LastModified string `json:"last_modified,omitempty"`
@@ -108,12 +110,14 @@ func runAWS(args ...string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	allArgs := append(args, getAWSArgs()...)
+	allArgs := append([]string{}, args...)
+	allArgs = append(allArgs, getAWSArgs()...)
 	cmd := exec.CommandContext(ctx, "aws", allArgs...)
 
 	out, err := cmd.Output()
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
 			stderr := strings.TrimSpace(string(exitErr.Stderr))
 			if stderr != "" {
 				return nil, fmt.Errorf("aws CLI error: %s", stderr)
@@ -194,7 +198,7 @@ func newLsCmd() *cobra.Command {
 				return output.PrintError("aws_error", err.Error(), nil)
 			}
 
-			objects := parseS3LsOutput(string(data))
+			objects := parseLsOutput(string(data))
 
 			result := ListResult{
 				Path:    s3Path,
@@ -309,8 +313,8 @@ func newPresignCmd() *cobra.Command {
 	return cmd
 }
 
-func parseS3LsOutput(output string) []S3Object {
-	var objects []S3Object
+func parseLsOutput(output string) []Object {
+	var objects []Object
 	lines := strings.Split(strings.TrimSpace(output), "\n")
 
 	for _, line := range lines {
@@ -323,7 +327,7 @@ func parseS3LsOutput(output string) []S3Object {
 		if strings.Contains(line, "PRE ") {
 			parts := strings.SplitN(line, "PRE ", 2)
 			if len(parts) == 2 {
-				objects = append(objects, S3Object{
+				objects = append(objects, Object{
 					Key:      strings.TrimSpace(parts[1]),
 					IsPrefix: true,
 				})
@@ -345,7 +349,7 @@ func parseS3LsOutput(output string) []S3Object {
 			sizeStr := fields[2]
 			key := strings.Join(fields[3:], " ")
 
-			objects = append(objects, S3Object{
+			objects = append(objects, Object{
 				Key:          key,
 				Size:         formatBytes(sizeStr),
 				LastModified: dateStr + " " + timeStr,
@@ -355,7 +359,7 @@ func parseS3LsOutput(output string) []S3Object {
 	}
 
 	if objects == nil {
-		objects = []S3Object{}
+		objects = []Object{}
 	}
 
 	return objects

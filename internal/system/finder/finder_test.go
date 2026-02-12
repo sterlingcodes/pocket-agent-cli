@@ -146,14 +146,14 @@ func TestDirWalkLimit(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		f.Write([]byte("data"))
+		_, _ = f.WriteString("data")
 		f.Close()
 	}
 
 	// Walk should complete and count files
 	var size int64
 	var fileCount int
-	filepath.Walk(tmpDir, func(_ string, info os.FileInfo, err error) error {
+	_ = filepath.Walk(tmpDir, func(_ string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil
 		}

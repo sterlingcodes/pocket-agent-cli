@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
@@ -268,7 +269,7 @@ func sendPushover(token, user, message, title string, priority int, sound string
 
 	if resp.StatusCode != http.StatusOK {
 		var errResp map[string]any
-		json.Unmarshal(body, &errResp)
+		_ = json.Unmarshal(body, &errResp)
 		return output.PrintError("send_failed", fmt.Sprintf("HTTP %d", resp.StatusCode), map[string]any{
 			"status_code": resp.StatusCode,
 			"response":    errResp,

@@ -11,11 +11,12 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const baseURL = "https://discord.com/api/v10"
+var baseURL = "https://discord.com/api/v10"
 
 var httpClient = &http.Client{Timeout: 30 * time.Second}
 
@@ -255,7 +256,8 @@ func newMessagesCmd() *cobra.Command {
 			}
 
 			result := make([]Message, 0, len(messages))
-			for _, m := range messages {
+			for i := range messages {
+				m := &messages[i]
 				authorName := m.Author.GlobalName
 				if authorName == "" {
 					authorName = m.Author.Username
@@ -342,7 +344,7 @@ func newSendCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&channelID, "channel", "c", "", "Channel ID (required)")
-	cmd.MarkFlagRequired("channel")
+	_ = cmd.MarkFlagRequired("channel")
 
 	return cmd
 }
@@ -472,7 +474,7 @@ func doRequest(method, reqURL, token string, payload any) ([]byte, error) {
 			RetryAfter float64 `json:"retry_after"`
 			Global     bool    `json:"global"`
 		}
-		json.Unmarshal(data, &rateLimitResp)
+		_ = json.Unmarshal(data, &rateLimitResp)
 
 		return nil, output.PrintError("rate_limited", "Discord rate limit exceeded", map[string]any{
 			"retry_after_seconds": rateLimitResp.RetryAfter,
@@ -494,7 +496,7 @@ func doRequest(method, reqURL, token string, payload any) ([]byte, error) {
 			Message string `json:"message"`
 			Code    int    `json:"code"`
 		}
-		json.Unmarshal(data, &errResp)
+		_ = json.Unmarshal(data, &errResp)
 
 		return nil, output.PrintError("forbidden", "Access denied: "+errResp.Message, map[string]any{
 			"discord_code": errResp.Code,
@@ -508,7 +510,7 @@ func doRequest(method, reqURL, token string, payload any) ([]byte, error) {
 			Message string `json:"message"`
 			Code    int    `json:"code"`
 		}
-		json.Unmarshal(data, &errResp)
+		_ = json.Unmarshal(data, &errResp)
 
 		return nil, output.PrintError("not_found", errResp.Message, map[string]any{
 			"discord_code": errResp.Code,
@@ -606,9 +608,9 @@ func formatTime(isoTime string) string {
 	return fmt.Sprintf("%dy ago", int(diff.Hours()/(24*365)))
 }
 
-func truncate(s string, max int) string {
-	if len(s) <= max {
+func truncate(s string, maxLen int) string {
+	if len(s) <= maxLen {
 		return s
 	}
-	return s[:max] + "..."
+	return s[:maxLen] + "..."
 }

@@ -10,11 +10,12 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const baseURL = "https://www.alphavantage.co/query"
+var baseURL = "https://www.alphavantage.co/query"
 
 var httpClient = &http.Client{Timeout: 30 * time.Second}
 
@@ -327,7 +328,7 @@ func doRequest(reqURL string) (*http.Response, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 	if err != nil {
 		return nil, output.PrintError("fetch_failed", err.Error(), nil)
 	}
@@ -350,12 +351,12 @@ func doRequest(reqURL string) (*http.Response, error) {
 
 func parseFloat(s string) float64 {
 	var f float64
-	fmt.Sscanf(s, "%f", &f)
+	_, _ = fmt.Sscanf(s, "%f", &f)
 	return f
 }
 
 func parseInt(s string) int64 {
 	var i int64
-	fmt.Sscanf(s, "%d", &i)
+	_, _ = fmt.Sscanf(s, "%d", &i)
 	return i
 }

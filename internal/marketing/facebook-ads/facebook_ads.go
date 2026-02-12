@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
@@ -154,7 +155,7 @@ func (c *fbClient) doGet(endpoint string, params url.Values) (map[string]any, er
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -309,7 +310,7 @@ func newCampaignsCmd() *cobra.Command {
 			params.Set("fields", "id,name,status,objective,daily_budget,lifetime_budget,budget_remaining,created_time,updated_time")
 			params.Set("limit", fmt.Sprintf("%d", limit))
 			if status != "" {
-				params.Set("effective_status", fmt.Sprintf(`["%s"]`, strings.ToUpper(status)))
+				params.Set("effective_status", fmt.Sprintf(`["%s"]`, strings.ToUpper(status))) //nolint:gocritic // Facebook API requires this JSON array format
 			}
 
 			raw, err := c.doGet(c.actID()+"/campaigns", params)
@@ -468,7 +469,7 @@ func newAdSetsCmd() *cobra.Command {
 			params.Set("fields", "id,name,campaign_id,status,daily_budget,lifetime_budget,billing_event,optimization_goal,created_time,updated_time")
 			params.Set("limit", fmt.Sprintf("%d", limit))
 			if status != "" {
-				params.Set("effective_status", fmt.Sprintf(`["%s"]`, strings.ToUpper(status)))
+				params.Set("effective_status", fmt.Sprintf(`["%s"]`, strings.ToUpper(status))) //nolint:gocritic // Facebook API requires this JSON array format
 			}
 
 			endpoint := c.actID() + "/adsets"
@@ -586,7 +587,7 @@ func newAdsCmd() *cobra.Command {
 			params.Set("fields", "id,name,adset_id,campaign_id,status,created_time,updated_time")
 			params.Set("limit", fmt.Sprintf("%d", limit))
 			if status != "" {
-				params.Set("effective_status", fmt.Sprintf(`["%s"]`, strings.ToUpper(status)))
+				params.Set("effective_status", fmt.Sprintf(`["%s"]`, strings.ToUpper(status))) //nolint:gocritic // Facebook API requires this JSON array format
 			}
 
 			endpoint := c.actID() + "/ads"
@@ -654,7 +655,7 @@ func newInsightsCmd() *cobra.Command {
 				params.Set("fields", "date_start,date_stop,impressions,clicks,spend,reach,ctr,cpc,cpm,actions")
 			}
 			if dateStart != "" {
-				params.Set("time_range", fmt.Sprintf(`{"since":"%s","until":"%s"}`, dateStart, dateStop))
+				params.Set("time_range", fmt.Sprintf(`{"since":"%s","until":"%s"}`, dateStart, dateStop)) //nolint:gocritic // Facebook API requires this JSON format
 			}
 			if level != "" {
 				params.Set("level", level)

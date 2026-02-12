@@ -1,6 +1,7 @@
 package dockerhub
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,10 +10,11 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const baseURL = "https://hub.docker.com/v2"
+var baseURL = "https://hub.docker.com/v2"
 
 var client = &http.Client{Timeout: 10 * time.Second}
 
@@ -85,7 +87,11 @@ func newSearchCmd() *cobra.Command {
 			query := url.QueryEscape(args[0])
 			reqURL := fmt.Sprintf("%s/search/repositories/?query=%s&page_size=%d", baseURL, query, limit)
 
-			resp, err := client.Get(reqURL)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, reqURL, http.NoBody)
+			if err != nil {
+				return output.PrintError("fetch_failed", err.Error(), nil)
+			}
+			resp, err := client.Do(req)
 			if err != nil {
 				return output.PrintError("fetch_failed", err.Error(), nil)
 			}
@@ -141,7 +147,11 @@ func newImageCmd() *cobra.Command {
 			namespace, repo := parts[0], parts[1]
 			reqURL := fmt.Sprintf("%s/repositories/%s/%s/", baseURL, namespace, repo)
 
-			resp, err := client.Get(reqURL)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, reqURL, http.NoBody)
+			if err != nil {
+				return output.PrintError("fetch_failed", err.Error(), nil)
+			}
+			resp, err := client.Do(req)
 			if err != nil {
 				return output.PrintError("fetch_failed", err.Error(), nil)
 			}
@@ -203,7 +213,11 @@ func newTagsCmd() *cobra.Command {
 			namespace, repo := parts[0], parts[1]
 			reqURL := fmt.Sprintf("%s/repositories/%s/%s/tags/?page_size=%d&ordering=last_updated", baseURL, namespace, repo, limit)
 
-			resp, err := client.Get(reqURL)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, reqURL, http.NoBody)
+			if err != nil {
+				return output.PrintError("fetch_failed", err.Error(), nil)
+			}
+			resp, err := client.Do(req)
 			if err != nil {
 				return output.PrintError("fetch_failed", err.Error(), nil)
 			}
@@ -273,7 +287,11 @@ func newInspectCmd() *cobra.Command {
 			namespace, repo := parts[0], parts[1]
 			reqURL := fmt.Sprintf("%s/repositories/%s/%s/tags/%s", baseURL, namespace, repo, tag)
 
-			resp, err := client.Get(reqURL)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, reqURL, http.NoBody)
+			if err != nil {
+				return output.PrintError("fetch_failed", err.Error(), nil)
+			}
+			resp, err := client.Do(req)
 			if err != nil {
 				return output.PrintError("fetch_failed", err.Error(), nil)
 			}
@@ -344,7 +362,7 @@ func normalizeImageName(name string) string {
 	return name
 }
 
-func parseNameTag(nameTag string) (string, string) {
+func parseNameTag(nameTag string) (name, tag string) {
 	if idx := strings.LastIndex(nameTag, ":"); idx != -1 {
 		return nameTag[:idx], nameTag[idx+1:]
 	}

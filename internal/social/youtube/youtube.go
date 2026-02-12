@@ -11,11 +11,12 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const baseURL = "https://www.googleapis.com/youtube/v3"
+var baseURL = "https://www.googleapis.com/youtube/v3"
 
 var httpClient = &http.Client{Timeout: 30 * time.Second}
 
@@ -150,7 +151,8 @@ func newSearchCmd() *cobra.Command {
 			}
 
 			var videos []Video
-			for _, item := range resp.Items {
+			for i := range resp.Items {
+				item := &resp.Items[i]
 				videos = append(videos, Video{
 					ID:          item.ID.VideoID,
 					Title:       item.Snippet.Title,
@@ -276,11 +278,12 @@ func newChannelCmd() *cobra.Command {
 			}
 
 			// Determine if it's a channel ID or username/handle
-			if strings.HasPrefix(channelArg, "UC") && len(channelArg) == 24 {
+			switch {
+			case strings.HasPrefix(channelArg, "UC") && len(channelArg) == 24:
 				params.Set("id", channelArg)
-			} else if strings.HasPrefix(channelArg, "@") {
+			case strings.HasPrefix(channelArg, "@"):
 				params.Set("forHandle", channelArg)
-			} else {
+			default:
 				params.Set("forHandle", "@"+channelArg)
 			}
 
@@ -648,7 +651,8 @@ func newTrendingCmd() *cobra.Command {
 			}
 
 			var videos []Video
-			for _, item := range resp.Items {
+			for i := range resp.Items {
+				item := &resp.Items[i]
 				videos = append(videos, Video{
 					ID:          item.ID,
 					Title:       item.Snippet.Title,
@@ -692,7 +696,7 @@ func doRequest(reqURL string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 	if err != nil {
 		return nil, output.PrintError("request_failed", err.Error(), nil)
 	}
@@ -741,7 +745,7 @@ func extractVideoID(input string) string {
 
 func parseInt(s string) int64 {
 	var n int64
-	fmt.Sscanf(s, "%d", &n)
+	_, _ = fmt.Sscanf(s, "%d", &n)
 	return n
 }
 
@@ -779,15 +783,15 @@ func parseDuration(isoDuration string) string {
 	isoDuration = strings.ToLower(isoDuration)
 
 	var hours, minutes, seconds int
-	fmt.Sscanf(isoDuration, "%dh%dm%ds", &hours, &minutes, &seconds)
+	_, _ = fmt.Sscanf(isoDuration, "%dh%dm%ds", &hours, &minutes, &seconds)
 
 	if hours == 0 && minutes == 0 && seconds == 0 {
 		// Try without hours
-		fmt.Sscanf(isoDuration, "%dm%ds", &minutes, &seconds)
+		_, _ = fmt.Sscanf(isoDuration, "%dm%ds", &minutes, &seconds)
 	}
 	if minutes == 0 && seconds == 0 {
 		// Try seconds only
-		fmt.Sscanf(isoDuration, "%ds", &seconds)
+		_, _ = fmt.Sscanf(isoDuration, "%ds", &seconds)
 	}
 
 	if hours > 0 {
@@ -802,7 +806,7 @@ func parseRelativeTime(rel string) (time.Time, error) {
 
 	var value int
 	var unit string
-	fmt.Sscanf(rel, "%d%s", &value, &unit)
+	_, _ = fmt.Sscanf(rel, "%d%s", &value, &unit)
 
 	switch unit {
 	case "d", "day", "days":
@@ -818,12 +822,12 @@ func parseRelativeTime(rel string) (time.Time, error) {
 	return time.Time{}, fmt.Errorf("invalid relative time: %s", rel)
 }
 
-func truncate(s string, max int) string {
+func truncate(s string, maxLen int) string {
 	s = strings.ReplaceAll(s, "\n", " ")
-	if len(s) <= max {
+	if len(s) <= maxLen {
 		return s
 	}
-	return s[:max] + "..."
+	return s[:maxLen] + "..."
 }
 
 func cleanHTML(s string) string {
@@ -836,11 +840,12 @@ func cleanHTML(s string) string {
 	result := strings.Builder{}
 	inTag := false
 	for _, r := range s {
-		if r == '<' {
+		switch {
+		case r == '<':
 			inTag = true
-		} else if r == '>' {
+		case r == '>':
 			inTag = false
-		} else if !inTag {
+		case !inTag:
 			result.WriteRune(r)
 		}
 	}

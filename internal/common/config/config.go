@@ -167,7 +167,7 @@ func Save(cfg *Config) error {
 
 	// Ensure directory exists
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0700); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return fmt.Errorf("failed to create config dir: %w", err)
 	}
 
@@ -176,7 +176,7 @@ func Save(cfg *Config) error {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
 
-	if err := os.WriteFile(path, data, 0600); err != nil {
+	if err := os.WriteFile(path, data, 0o600); err != nil {
 		return fmt.Errorf("failed to write config: %w", err)
 	}
 
@@ -184,6 +184,8 @@ func Save(cfg *Config) error {
 }
 
 // Set sets a config value by key
+//
+//nolint:gocyclo // complex but clear sequential logic
 func Set(key, value string) error {
 	cfg, err := Load()
 	if err != nil {
@@ -347,6 +349,8 @@ func Set(key, value string) error {
 }
 
 // Get gets a config value by key
+//
+//nolint:gocyclo // complex but clear sequential logic
 func Get(key string) (string, error) {
 	cfg, err := Load()
 	if err != nil {

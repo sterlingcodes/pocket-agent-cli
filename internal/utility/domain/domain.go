@@ -11,10 +11,15 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-var httpClient = &http.Client{Timeout: 30 * time.Second}
+var (
+	httpClient = &http.Client{Timeout: 30 * time.Second}
+	whoisURL   = "https://whois.freeaiapi.xyz/"
+	dnsURL     = "https://dns.google/resolve"
+)
 
 // DNSRecord is an LLM-friendly DNS record
 type DNSRecord struct {
@@ -128,10 +133,10 @@ func newWhoisCmd() *cobra.Command {
 			parts := strings.SplitN(domain, ".", 2)
 			var reqURL string
 			if len(parts) == 2 {
-				reqURL = fmt.Sprintf("https://whois.freeaiapi.xyz/?name=%s&suffix=%s",
-					url.QueryEscape(parts[0]), url.QueryEscape(parts[1]))
+				reqURL = fmt.Sprintf("%s?name=%s&suffix=%s",
+					whoisURL, url.QueryEscape(parts[0]), url.QueryEscape(parts[1]))
 			} else {
-				reqURL = fmt.Sprintf("https://whois.freeaiapi.xyz/?name=%s", url.QueryEscape(domain))
+				reqURL = fmt.Sprintf("%s?name=%s", whoisURL, url.QueryEscape(domain))
 			}
 
 			resp, err := doRequest(reqURL)
@@ -202,7 +207,7 @@ func newSSLCmd() *cobra.Command {
 			addr := fmt.Sprintf("%s:%d", domain, port)
 
 			conn, err := tls.Dial("tcp", addr, &tls.Config{
-				InsecureSkipVerify: true, // We want to inspect even invalid certs
+				InsecureSkipVerify: true, //nolint:gosec // intentional: inspecting invalid certs
 			})
 			if err != nil {
 				return output.PrintError("connection_failed", "Could not connect to "+addr+": "+err.Error(), nil)
@@ -247,8 +252,8 @@ func newSSLCmd() *cobra.Command {
 }
 
 func dnsLookup(domain, recordType string) ([]DNSRecord, error) {
-	reqURL := fmt.Sprintf("https://dns.google/resolve?name=%s&type=%s",
-		url.QueryEscape(domain), url.QueryEscape(recordType))
+	reqURL := fmt.Sprintf("%s?name=%s&type=%s",
+		dnsURL, url.QueryEscape(domain), url.QueryEscape(recordType))
 
 	resp, err := doRequest(reqURL)
 	if err != nil {
@@ -278,7 +283,7 @@ func dnsLookup(domain, recordType string) ([]DNSRecord, error) {
 		return nil, fmt.Errorf("no records found")
 	}
 
-	var records []DNSRecord
+	records := make([]DNSRecord, 0, len(data.Answer))
 	for _, ans := range data.Answer {
 		records = append(records, DNSRecord{
 			Type:  dnsTypeToString(ans.Type),
@@ -341,7 +346,7 @@ func doRequest(reqURL string) (*http.Response, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 	if err != nil {
 		return nil, output.PrintError("fetch_failed", err.Error(), nil)
 	}

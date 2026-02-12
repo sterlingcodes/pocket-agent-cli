@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
@@ -133,7 +134,7 @@ func fetchHeaders(rawURL string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "HEAD", rawURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "HEAD", rawURL, http.NoBody)
 	if err != nil {
 		return output.PrintError("fetch_failed", err.Error(), nil)
 	}

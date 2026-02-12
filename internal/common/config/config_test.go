@@ -121,8 +121,8 @@ func TestSaveFilePermissions(t *testing.T) {
 	}
 
 	perm := info.Mode().Perm()
-	if perm != 0600 {
-		t.Errorf("expected permissions 0600, got %o", perm)
+	if perm != 0o600 {
+		t.Errorf("expected permissions 0o600, got %o", perm)
 	}
 }
 
@@ -233,7 +233,7 @@ func TestMustGetEmpty(t *testing.T) {
 func TestMustGetSet(t *testing.T) {
 	setupTempConfig(t)
 
-	Set("github_token", "test_value")
+	_ = Set("github_token", "test_value")
 
 	val, err := MustGet("github_token")
 	if err != nil {
@@ -321,7 +321,7 @@ func TestLoadInvalidJSON(t *testing.T) {
 	path := setupTempConfig(t)
 
 	// Write invalid JSON
-	os.WriteFile(path, []byte("not valid json{{{"), 0600)
+	_ = os.WriteFile(path, []byte("not valid json{{{"), 0o600)
 
 	_, err := Load()
 	if err == nil {
@@ -332,8 +332,8 @@ func TestLoadInvalidJSON(t *testing.T) {
 func TestSetOverwritesExisting(t *testing.T) {
 	setupTempConfig(t)
 
-	Set("github_token", "first")
-	Set("github_token", "second")
+	_ = Set("github_token", "first")
+	_ = Set("github_token", "second")
 
 	val, _ := Get("github_token")
 	if val != "second" {
@@ -344,8 +344,8 @@ func TestSetOverwritesExisting(t *testing.T) {
 func TestSetPreservesOtherKeys(t *testing.T) {
 	setupTempConfig(t)
 
-	Set("github_token", "gh_value")
-	Set("slack_token", "slack_value")
+	_ = Set("github_token", "gh_value")
+	_ = Set("slack_token", "slack_value")
 
 	gh, _ := Get("github_token")
 	sl, _ := Get("slack_token")

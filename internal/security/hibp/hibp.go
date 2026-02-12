@@ -2,7 +2,7 @@ package hibp
 
 import (
 	"context"
-	"crypto/sha1"
+	"crypto/sha1" //nolint:gosec // required by HIBP k-anonymity API
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -13,10 +13,15 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-var httpClient = &http.Client{Timeout: 30 * time.Second}
+var (
+	httpClient      = &http.Client{Timeout: 30 * time.Second}
+	passwordBaseURL = "https://api.pwnedpasswords.com"
+	breachesBaseURL = "https://haveibeenpwned.com/api/v3"
+)
 
 // PasswordResult represents the result of a password breach check
 type PasswordResult struct {
@@ -61,7 +66,7 @@ func newPasswordCmd() *cobra.Command {
 			password := args[0]
 
 			// SHA1 hash the password
-			hasher := sha1.New()
+			hasher := sha1.New() //nolint:gosec // required by HIBP k-anonymity API
 			hasher.Write([]byte(password))
 			hash := strings.ToUpper(hex.EncodeToString(hasher.Sum(nil)))
 
@@ -72,8 +77,8 @@ func newPasswordCmd() *cobra.Command {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
 
-			reqURL := fmt.Sprintf("https://api.pwnedpasswords.com/range/%s", prefix)
-			req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+			reqURL := fmt.Sprintf("%s/range/%s", passwordBaseURL, prefix)
+			req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 			if err != nil {
 				return output.PrintError("request_error", fmt.Sprintf("failed to create request: %s", err.Error()), nil)
 			}
@@ -103,7 +108,7 @@ func newPasswordCmd() *cobra.Command {
 					continue
 				}
 
-				if strings.ToUpper(parts[0]) == suffix {
+				if strings.EqualFold(parts[0], suffix) {
 					count, err := strconv.Atoi(strings.TrimSpace(parts[1]))
 					if err != nil {
 						count = 0
@@ -141,8 +146,8 @@ func newBreachesCmd() *cobra.Command {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
 
-			reqURL := "https://haveibeenpwned.com/api/v3/breaches"
-			req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+			reqURL := breachesBaseURL + "/breaches"
+			req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 			if err != nil {
 				return output.PrintError("request_error", fmt.Sprintf("failed to create request: %s", err.Error()), nil)
 			}

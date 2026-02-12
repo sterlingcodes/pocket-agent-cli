@@ -10,13 +10,14 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
 var baseURL = "https://sellingpartnerapi-na.amazon.com"
 
-var tokenURL = "https://api.amazon.com/auth/o2/token"
+var tokenURL = "https://api.amazon.com/auth/o2/token" //nolint:gosec // OAuth endpoint URL, not a credential
 
 var httpClient = &http.Client{Timeout: 30 * time.Second}
 
@@ -220,8 +221,8 @@ func (c *spClient) ensureAccessToken() error {
 	c.tokenExpiry = time.Now().Add(time.Duration(tokenResp.ExpiresIn-60) * time.Second)
 
 	// Cache token
-	config.Set("amazon_sp_access_token", c.accessToken)
-	config.Set("amazon_sp_token_expiry", c.tokenExpiry.Format(time.RFC3339))
+	_ = config.Set("amazon_sp_access_token", c.accessToken)
+	_ = config.Set("amazon_sp_token_expiry", c.tokenExpiry.Format(time.RFC3339))
 
 	return nil
 }
@@ -240,7 +241,7 @@ func (c *spClient) doGet(endpoint string, params url.Values) (map[string]any, er
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}

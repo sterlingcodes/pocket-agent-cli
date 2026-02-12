@@ -9,8 +9,11 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
+
+const boolTrue = "true"
 
 // Reminder represents a single reminder item
 type Reminder struct {
@@ -113,7 +116,7 @@ func newListCmd() *cobra.Command {
 			if listName != "" {
 				completedFilter := "false"
 				if showCompleted {
-					completedFilter = "true"
+					completedFilter = boolTrue
 				}
 				script = fmt.Sprintf(`
 tell application "Reminders"
@@ -149,7 +152,7 @@ end tell
 			} else {
 				completedFilter := "false"
 				if showCompleted {
-					completedFilter = "true"
+					completedFilter = boolTrue
 				}
 				script = fmt.Sprintf(`
 tell application "Reminders"
@@ -243,7 +246,7 @@ tell application "Reminders"
 
 			// Add notes if specified
 			if notes != "" {
-				scriptBuilder.WriteString(fmt.Sprintf(`, body:"%s"`, escapeAppleScriptString(notes)))
+				scriptBuilder.WriteString(fmt.Sprintf(`, body:"%s"`, escapeAppleScriptString(notes))) //nolint:gocritic // AppleScript syntax requires this format
 			}
 
 			scriptBuilder.WriteString(`}
@@ -599,7 +602,7 @@ func parseReminderLists(output string) []ReminderList {
 		parts := strings.Split(line, "\t")
 		if len(parts) >= 3 {
 			count := 0
-			fmt.Sscanf(parts[2], "%d", &count)
+			_, _ = fmt.Sscanf(parts[2], "%d", &count)
 			lists = append(lists, ReminderList{
 				ID:    parts[0],
 				Name:  parts[1],
@@ -612,9 +615,9 @@ func parseReminderLists(output string) []ReminderList {
 }
 
 // parseReminders parses the tab-separated reminder output
-func parseReminders(output string, defaultList string) []Reminder {
-	var reminders []Reminder
+func parseReminders(output, defaultList string) []Reminder {
 	lines := strings.Split(output, "\n")
+	reminders := make([]Reminder, 0, len(lines))
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -627,13 +630,14 @@ func parseReminders(output string, defaultList string) []Reminder {
 		var reminder Reminder
 
 		// Handle different formats based on whether list name is included
-		if defaultList != "" && len(parts) >= 6 {
+		switch {
+		case defaultList != "" && len(parts) >= 6:
 			// Format: ID, Name, Completed, Priority, DueDate, Notes
 			reminder.ID = parts[0]
 			reminder.Name = parts[1]
 			reminder.List = defaultList
-			reminder.Completed = parts[2] == "true"
-			fmt.Sscanf(parts[3], "%d", &reminder.Priority)
+			reminder.Completed = parts[2] == boolTrue
+			_, _ = fmt.Sscanf(parts[3], "%d", &reminder.Priority)
 			if parts[4] != "" {
 				dueStr := parts[4]
 				reminder.DueDate = &dueStr
@@ -642,13 +646,13 @@ func parseReminders(output string, defaultList string) []Reminder {
 				notes := parts[5]
 				reminder.Notes = &notes
 			}
-		} else if len(parts) >= 7 {
+		case len(parts) >= 7:
 			// Format: ID, Name, ListName, Completed, Priority, DueDate, Notes
 			reminder.ID = parts[0]
 			reminder.Name = parts[1]
 			reminder.List = parts[2]
-			reminder.Completed = parts[3] == "true"
-			fmt.Sscanf(parts[4], "%d", &reminder.Priority)
+			reminder.Completed = parts[3] == boolTrue
+			_, _ = fmt.Sscanf(parts[4], "%d", &reminder.Priority)
 			if parts[5] != "" {
 				dueStr := parts[5]
 				reminder.DueDate = &dueStr
@@ -657,7 +661,7 @@ func parseReminders(output string, defaultList string) []Reminder {
 				notes := parts[6]
 				reminder.Notes = &notes
 			}
-		} else {
+		default:
 			continue
 		}
 

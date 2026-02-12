@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
@@ -24,7 +25,7 @@ const (
 	tweetEndpoint = "https://api.x.com/2/tweets"
 	userEndpoint  = "https://api.x.com/2/users"
 	authEndpoint  = "https://x.com/i/oauth2/authorize"
-	tokenEndpoint = "https://api.x.com/2/oauth2/token"
+	tokenEndpoint = "https://api.x.com/2/oauth2/token" //nolint:gosec // not a credential, this is an OAuth endpoint URL
 	callbackPort  = "8765"
 	redirectURI   = "http://127.0.0.1:" + callbackPort + "/callback"
 	defaultScopes = "tweet.read tweet.write users.read offline.access"
@@ -136,9 +137,9 @@ func refreshAccessToken(clientID, refreshToken string) (string, error) {
 
 	// Store new tokens (X uses rotating refresh tokens)
 	expiry := time.Now().Add(time.Duration(tokenResp.ExpiresIn-60) * time.Second)
-	config.Set("x_access_token", tokenResp.AccessToken)
-	config.Set("x_refresh_token", tokenResp.RefreshToken)
-	config.Set("x_token_expiry", expiry.Format(time.RFC3339))
+	_ = config.Set("x_access_token", tokenResp.AccessToken)
+	_ = config.Set("x_refresh_token", tokenResp.RefreshToken)
+	_ = config.Set("x_token_expiry", expiry.Format(time.RFC3339))
 
 	return tokenResp.AccessToken, nil
 }
@@ -185,13 +186,13 @@ func (c *xClient) doRequest(method, reqURL string, body any) ([]byte, error) {
 		}
 		if json.Unmarshal(respBody, &errResp) == nil {
 			if errResp.Detail != "" {
-				return nil, fmt.Errorf("X API error: %s", errResp.Detail)
+				return nil, fmt.Errorf("x API error: %s", errResp.Detail)
 			}
 			if len(errResp.Errors) > 0 {
-				return nil, fmt.Errorf("X API error: %s", errResp.Errors[0].Message)
+				return nil, fmt.Errorf("x API error: %s", errResp.Errors[0].Message)
 			}
 		}
-		return nil, fmt.Errorf("X API error (HTTP %d): %s", resp.StatusCode, string(respBody))
+		return nil, fmt.Errorf("x API error (HTTP %d): %s", resp.StatusCode, string(respBody))
 	}
 
 	return respBody, nil
@@ -220,6 +221,7 @@ func generateState() (string, error) {
 	return base64.RawURLEncoding.EncodeToString(b), nil
 }
 
+//nolint:gocyclo // complex but clear sequential logic
 func newAuthCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "auth",
@@ -291,14 +293,14 @@ func newAuthCmd() *cobra.Command {
 				fmt.Fprintf(w, "Authorization successful! You can close this tab and return to the terminal.")
 			})
 
-			server := &http.Server{Handler: mux}
-			go server.Serve(listener)
+			server := &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second}
+			go func() { _ = server.Serve(listener) }()
 
 			// Open browser
 			fmt.Println("Opening browser for X/Twitter authorization...")
 			fmt.Println("If the browser doesn't open, visit this URL:")
 			fmt.Println(authorizationURL)
-			exec.Command("open", authorizationURL).Start()
+			_ = exec.Command("open", authorizationURL).Start()
 
 			// Wait for callback (with timeout)
 			fmt.Println("\nWaiting for authorization...")
@@ -361,9 +363,9 @@ func newAuthCmd() *cobra.Command {
 
 			// Store tokens
 			expiry := time.Now().Add(time.Duration(tokenResp.ExpiresIn-60) * time.Second)
-			config.Set("x_access_token", tokenResp.AccessToken)
-			config.Set("x_refresh_token", tokenResp.RefreshToken)
-			config.Set("x_token_expiry", expiry.Format(time.RFC3339))
+			_ = config.Set("x_access_token", tokenResp.AccessToken)
+			_ = config.Set("x_refresh_token", tokenResp.RefreshToken)
+			_ = config.Set("x_token_expiry", expiry.Format(time.RFC3339))
 
 			return output.Print(map[string]any{
 				"status": "authenticated",

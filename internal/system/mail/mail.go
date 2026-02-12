@@ -10,10 +10,13 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
 var htmlTagRe = regexp.MustCompile(`<[^>]*>`)
+
+const boolTrue = "true"
 
 // htmlToPlaintext converts HTML email body to readable plaintext
 // preserving line breaks, list items, and paragraph structure.
@@ -125,7 +128,7 @@ func runAppleScript(script string) (string, error) {
 		// Check for Mail app not running
 		if strings.Contains(errMsg, "Application isn't running") ||
 			strings.Contains(errMsg, "not running") {
-			return "", fmt.Errorf("Apple Mail is not running. Please open Mail.app first")
+			return "", fmt.Errorf("apple Mail is not running, please open Mail.app first")
 		}
 		return "", fmt.Errorf("%s", strings.TrimSpace(errMsg))
 	}
@@ -615,7 +618,7 @@ func newSendCmd() *cobra.Command {
 			// Account selection
 			accountPart := ""
 			if accountName != "" {
-				accountPart = fmt.Sprintf(`, sender:"%s"`, escapeAppleScript(accountName))
+				accountPart = fmt.Sprintf(`, sender:"%s"`, escapeAppleScript(accountName)) //nolint:gocritic // AppleScript syntax requires this format
 			}
 
 			script := fmt.Sprintf(`
@@ -823,7 +826,7 @@ func parseAccounts(output string) []Account {
 		if len(parts) >= 3 {
 			account := Account{
 				Name:    parts[0],
-				Enabled: parts[1] == "true",
+				Enabled: parts[1] == boolTrue,
 				Type:    parts[2],
 			}
 			if len(parts) >= 4 {
@@ -881,8 +884,8 @@ func parseMessageList(output string) []Message {
 				Subject: parts[1],
 				From:    parts[2],
 				Date:    parts[3],
-				Unread:  parts[4] == "true",
-				Flagged: parts[5] == "true",
+				Unread:  parts[4] == boolTrue,
+				Flagged: parts[5] == boolTrue,
 			})
 		}
 	}
@@ -906,8 +909,8 @@ func parseFullMessage(output string) *Message {
 		CC:           parts[4],
 		Date:         parts[5],
 		DateReceived: parts[6],
-		Unread:       parts[7] == "true",
-		Flagged:      parts[8] == "true",
+		Unread:       parts[7] == boolTrue,
+		Flagged:      parts[8] == boolTrue,
 		Body:         htmlToPlaintext(parts[9]),
 	}
 }

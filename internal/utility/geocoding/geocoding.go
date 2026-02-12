@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
@@ -73,7 +74,7 @@ func forwardGeocode(query string) error {
 
 	reqURL := fmt.Sprintf("%s/search?q=%s&format=json&limit=5", baseURL, url.QueryEscape(query))
 
-	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 	if err != nil {
 		return output.PrintError("fetch_failed", err.Error(), nil)
 	}
@@ -128,7 +129,7 @@ func reverseGeocode(lat, lon string) error {
 	reqURL := fmt.Sprintf("%s/reverse?lat=%s&lon=%s&format=json",
 		baseURL, url.QueryEscape(lat), url.QueryEscape(lon))
 
-	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 	if err != nil {
 		return output.PrintError("fetch_failed", err.Error(), nil)
 	}

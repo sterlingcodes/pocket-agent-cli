@@ -11,8 +11,9 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3" // sqlite3 driver registration
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
@@ -121,16 +122,17 @@ func convertAppleTimestamp(timestamp int64) string {
 	// Apple timestamps can be in nanoseconds (newer) or seconds (older)
 	// If the timestamp is very large (> 1 billion), it's likely in nanoseconds
 	var t time.Time
-	if timestamp > 1000000000000000000 {
+	switch {
+	case timestamp > 1000000000000000000:
 		// Nanoseconds since Apple epoch
 		t = appleEpoch.Add(time.Duration(timestamp) * time.Nanosecond)
-	} else if timestamp > 1000000000000000 {
+	case timestamp > 1000000000000000:
 		// Microseconds since Apple epoch (some versions)
 		t = appleEpoch.Add(time.Duration(timestamp) * time.Microsecond)
-	} else if timestamp > 1000000000000 {
+	case timestamp > 1000000000000:
 		// Milliseconds since Apple epoch
 		t = appleEpoch.Add(time.Duration(timestamp) * time.Millisecond)
-	} else {
+	default:
 		// Seconds since Apple epoch
 		t = appleEpoch.Add(time.Duration(timestamp) * time.Second)
 	}
@@ -145,11 +147,10 @@ func escapeAppleScript(s string) string {
 	return s
 }
 
-// runAppleScript executes an AppleScript and returns the output
-func runAppleScript(script string) (string, error) {
+// runAppleScript executes an AppleScript
+func runAppleScript(script string) error {
 	cmd := exec.Command("osascript", "-e", script)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
+	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
 	err := cmd.Run()
@@ -160,13 +161,13 @@ func runAppleScript(script string) (string, error) {
 		}
 		if strings.Contains(errMsg, "not allowed assistive access") ||
 			strings.Contains(errMsg, "osascript is not allowed") {
-			return "", fmt.Errorf("permission denied: Automation access required. " +
+			return fmt.Errorf("permission denied: Automation access required. " +
 				"Go to System Settings > Privacy & Security > Automation and enable access")
 		}
-		return "", fmt.Errorf("%s", strings.TrimSpace(errMsg))
+		return fmt.Errorf("%s", strings.TrimSpace(errMsg))
 	}
 
-	return strings.TrimSpace(stdout.String()), nil
+	return nil
 }
 
 // newSendCmd creates the send command
@@ -194,7 +195,7 @@ tell application "Messages"
 end tell
 `, service, escapeAppleScript(recipient), escapeAppleScript(message))
 
-			_, err := runAppleScript(script)
+			err := runAppleScript(script)
 			if err != nil {
 				// Try alternative approach - sending directly to participant
 				altScript := fmt.Sprintf(`
@@ -203,7 +204,7 @@ tell application "Messages"
 end tell
 `, escapeAppleScript(message), escapeAppleScript(recipient))
 
-				_, err = runAppleScript(altScript)
+				err = runAppleScript(altScript)
 				if err != nil {
 					return output.PrintError("send_failed", err.Error(), map[string]string{
 						"recipient": recipient,
@@ -325,6 +326,8 @@ func newChatsCmd() *cobra.Command {
 }
 
 // newReadCmd creates the read command to read messages from a conversation
+//
+//nolint:gocyclo // complex but clear sequential logic
 func newReadCmd() *cobra.Command {
 	var limit int
 

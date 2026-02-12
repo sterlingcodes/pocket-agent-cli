@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
@@ -41,8 +42,8 @@ type Shop struct {
 	CreatedAt    string `json:"created_at"`
 }
 
-// ShopifyOrder represents an order.
-type ShopifyOrder struct {
+// Order represents an order.
+type Order struct {
 	ID              int64  `json:"id"`
 	Name            string `json:"name"`
 	Email           string `json:"email"`
@@ -150,11 +151,54 @@ func (c *shopClient) doGet(endpoint string, params url.Values) (map[string]any, 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("X-Shopify-Access-Token", c.token)
+	req.Header.Set("User-Agent", "Pocket-CLI/1.0")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		var errResp map[string]any
+		if decErr := json.NewDecoder(resp.Body).Decode(&errResp); decErr == nil {
+			if apiErr := parseShopifyError(errResp, resp.StatusCode); apiErr != nil {
+				return nil, apiErr
+			}
+		}
+		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
+	}
+
+	var result map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return result, nil
+}
+
+func (c *shopClient) doMutationRequest(method, endpoint string, payload any) (map[string]any, error) {
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	reqURL := fmt.Sprintf("%s/%s", c.apiBaseURL, endpoint)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, method, reqURL, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("X-Shopify-Access-Token", c.token)
+	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "Pocket-CLI/1.0")
 
 	resp, err := httpClient.Do(req)
@@ -182,89 +226,11 @@ func (c *shopClient) doGet(endpoint string, params url.Values) (map[string]any, 
 }
 
 func (c *shopClient) doPost(endpoint string, payload any) (map[string]any, error) {
-	body, err := json.Marshal(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	reqURL := fmt.Sprintf("%s/%s", c.apiBaseURL, endpoint)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(ctx, "POST", reqURL, bytes.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("X-Shopify-Access-Token", c.token)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "Pocket-CLI/1.0")
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 400 {
-		var errResp map[string]any
-		if decErr := json.NewDecoder(resp.Body).Decode(&errResp); decErr == nil {
-			if apiErr := parseShopifyError(errResp, resp.StatusCode); apiErr != nil {
-				return nil, apiErr
-			}
-		}
-		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
-	}
-
-	var result map[string]any
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
-
-	return result, nil
+	return c.doMutationRequest("POST", endpoint, payload)
 }
 
 func (c *shopClient) doPut(endpoint string, payload any) (map[string]any, error) {
-	body, err := json.Marshal(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	reqURL := fmt.Sprintf("%s/%s", c.apiBaseURL, endpoint)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(ctx, "PUT", reqURL, bytes.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("X-Shopify-Access-Token", c.token)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "Pocket-CLI/1.0")
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 400 {
-		var errResp map[string]any
-		if decErr := json.NewDecoder(resp.Body).Decode(&errResp); decErr == nil {
-			if apiErr := parseShopifyError(errResp, resp.StatusCode); apiErr != nil {
-				return nil, apiErr
-			}
-		}
-		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
-	}
-
-	var result map[string]any
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
-
-	return result, nil
+	return c.doMutationRequest("PUT", endpoint, payload)
 }
 
 func (c *shopClient) doDelete(endpoint string) error {
@@ -273,7 +239,7 @@ func (c *shopClient) doDelete(endpoint string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "DELETE", reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "DELETE", reqURL, http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -302,11 +268,11 @@ func (c *shopClient) doDelete(endpoint string) error {
 func parseShopifyError(resp map[string]any, statusCode int) error {
 	// Shopify errors can be string or object
 	if errStr, ok := resp["errors"].(string); ok {
-		return fmt.Errorf("Shopify error (HTTP %d): %s", statusCode, errStr)
+		return fmt.Errorf("shopify error (HTTP %d): %s", statusCode, errStr)
 	}
 	if errObj, ok := resp["errors"].(map[string]any); ok {
 		data, _ := json.Marshal(errObj)
-		return fmt.Errorf("Shopify error (HTTP %d): %s", statusCode, string(data))
+		return fmt.Errorf("shopify error (HTTP %d): %s", statusCode, string(data))
 	}
 	return nil
 }
@@ -353,6 +319,7 @@ func newShopCmd() *cobra.Command {
 
 // --- orders ---
 
+//nolint:dupl // structurally similar but different parameters and extraction logic
 func newOrdersCmd() *cobra.Command {
 	var limit int
 	var status, since, financial string
@@ -389,7 +356,7 @@ func newOrdersCmd() *cobra.Command {
 	}
 
 	cmd.Flags().IntVarP(&limit, "limit", "l", 50, "Number of orders to return")
-	cmd.Flags().StringVar(&status, "status", "", "Filter by status: open, closed, cancelled, any")
+	cmd.Flags().StringVar(&status, "status", "", "Filter by status: open, closed, canceled, any")
 	cmd.Flags().StringVar(&since, "since", "", "Created after date (ISO 8601)")
 	cmd.Flags().StringVar(&financial, "financial", "", "Filter: paid, pending, refunded, etc.")
 
@@ -425,6 +392,7 @@ func newOrderCmd() *cobra.Command {
 
 // --- products ---
 
+//nolint:dupl // structurally similar but different parameters and extraction logic
 func newProductsCmd() *cobra.Command {
 	var limit int
 	var status, vendor, collection string
@@ -655,9 +623,9 @@ func newInventorySetCmd() *cobra.Command {
 
 // --- extraction helpers ---
 
-func extractOrders(raw map[string]any) []ShopifyOrder {
+func extractOrders(raw map[string]any) []Order {
 	ordersArr, _ := raw["orders"].([]any)
-	result := make([]ShopifyOrder, 0, len(ordersArr))
+	result := make([]Order, 0, len(ordersArr))
 	for _, item := range ordersArr {
 		m, ok := item.(map[string]any)
 		if !ok {
@@ -668,8 +636,8 @@ func extractOrders(raw map[string]any) []ShopifyOrder {
 	return result
 }
 
-func mapOrder(m map[string]any) ShopifyOrder {
-	return ShopifyOrder{
+func mapOrder(m map[string]any) Order {
+	return Order{
 		ID:              getInt64(m, "id"),
 		Name:            getString(m, "name"),
 		Email:           getString(m, "email"),

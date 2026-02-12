@@ -7,15 +7,15 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const baseURL = "https://api.trello.com/1"
+var baseURL = "https://api.trello.com/1"
 
 // Board represents a Trello board
 type Board struct {
@@ -91,7 +91,7 @@ func NewClient(apiKey, token string) *Client {
 	}
 }
 
-func (c *Client) request(method, endpoint string, params url.Values, body string) ([]byte, error) {
+func (c *Client) request(method, endpoint string, params url.Values) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -103,18 +103,9 @@ func (c *Client) request(method, endpoint string, params url.Values, body string
 
 	reqURL := fmt.Sprintf("%s%s?%s", baseURL, endpoint, params.Encode())
 
-	var bodyReader io.Reader
-	if body != "" {
-		bodyReader = strings.NewReader(body)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, method, reqURL, bodyReader)
+	req, err := http.NewRequestWithContext(ctx, method, reqURL, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	if body != "" {
-		req.Header.Set("Content-Type", "application/json")
 	}
 
 	resp, err := c.http.Do(req)
@@ -137,7 +128,7 @@ func (c *Client) request(method, endpoint string, params url.Values, body string
 
 // GetBoards returns all boards for the authenticated user
 func (c *Client) GetBoards() ([]Board, error) {
-	data, err := c.request("GET", "/members/me/boards", nil, "")
+	data, err := c.request("GET", "/members/me/boards", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +143,7 @@ func (c *Client) GetBoards() ([]Board, error) {
 
 // GetBoard returns a single board by ID
 func (c *Client) GetBoard(id string) (*Board, error) {
-	data, err := c.request("GET", "/boards/"+id, nil, "")
+	data, err := c.request("GET", "/boards/"+id, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +158,7 @@ func (c *Client) GetBoard(id string) (*Board, error) {
 
 // GetBoardLists returns all lists on a board
 func (c *Client) GetBoardLists(boardID string) ([]List, error) {
-	data, err := c.request("GET", "/boards/"+boardID+"/lists", nil, "")
+	data, err := c.request("GET", "/boards/"+boardID+"/lists", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +173,7 @@ func (c *Client) GetBoardLists(boardID string) ([]List, error) {
 
 // GetBoardCards returns all cards on a board
 func (c *Client) GetBoardCards(boardID string) ([]Card, error) {
-	data, err := c.request("GET", "/boards/"+boardID+"/cards", nil, "")
+	data, err := c.request("GET", "/boards/"+boardID+"/cards", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +188,7 @@ func (c *Client) GetBoardCards(boardID string) ([]Card, error) {
 
 // GetListCards returns all cards in a list
 func (c *Client) GetListCards(listID string) ([]Card, error) {
-	data, err := c.request("GET", "/lists/"+listID+"/cards", nil, "")
+	data, err := c.request("GET", "/lists/"+listID+"/cards", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +203,7 @@ func (c *Client) GetListCards(listID string) ([]Card, error) {
 
 // GetCard returns a single card by ID
 func (c *Client) GetCard(id string) (*Card, error) {
-	data, err := c.request("GET", "/cards/"+id, nil, "")
+	data, err := c.request("GET", "/cards/"+id, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +218,7 @@ func (c *Client) GetCard(id string) (*Card, error) {
 
 // GetCardLabels returns labels attached to a card
 func (c *Client) GetCardLabels(cardID string) ([]Label, error) {
-	data, err := c.request("GET", "/cards/"+cardID+"/labels", nil, "")
+	data, err := c.request("GET", "/cards/"+cardID+"/labels", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +240,7 @@ func (c *Client) CreateCard(name, listID, description string) (*Card, error) {
 		params.Set("desc", description)
 	}
 
-	data, err := c.request("POST", "/cards", params, "")
+	data, err := c.request("POST", "/cards", params)
 	if err != nil {
 		return nil, err
 	}
@@ -435,9 +426,9 @@ func newCardsCmd() *cobra.Command {
 
 			// Filter out closed cards
 			openCards := make([]Card, 0)
-			for _, c := range cards {
-				if !c.Closed {
-					openCards = append(openCards, c)
+			for i := range cards {
+				if !cards[i].Closed {
+					openCards = append(openCards, cards[i])
 				}
 			}
 

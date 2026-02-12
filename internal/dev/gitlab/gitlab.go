@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
@@ -58,7 +59,7 @@ func (c *gitlabClient) doRequest(endpoint string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", c.baseURL+"/api/v4"+endpoint, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", c.baseURL+"/api/v4"+endpoint, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +142,8 @@ func newProjectsCmd() *cobra.Command {
 			}
 
 			result := make([]map[string]any, len(projects))
-			for i, p := range projects {
+			for i := range projects {
+				p := &projects[i]
 				result[i] = map[string]any{
 					"id":             p.ID,
 					"name":           p.Name,
@@ -226,7 +228,8 @@ func newIssuesCmd() *cobra.Command {
 			}
 
 			result := make([]map[string]any, len(issues))
-			for i, issue := range issues {
+			for i := range issues {
+				issue := &issues[i]
 				assignees := make([]string, len(issue.Assignees))
 				for j, a := range issue.Assignees {
 					assignees[j] = a.Username
@@ -313,7 +316,8 @@ func newMRsCmd() *cobra.Command {
 			}
 
 			result := make([]map[string]any, len(mrs))
-			for i, mr := range mrs {
+			for i := range mrs {
+				mr := &mrs[i]
 				result[i] = map[string]any{
 					"id":            mr.ID,
 					"iid":           mr.IID,

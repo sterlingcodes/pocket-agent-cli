@@ -13,10 +13,11 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const baseURL = "https://api.stackexchange.com/2.3"
+var baseURL = "https://api.stackexchange.com/2.3"
 
 var (
 	httpClient = &http.Client{Timeout: 30 * time.Second}
@@ -94,8 +95,8 @@ func newSearchCmd() *cobra.Command {
 			}
 
 			questions := make([]Question, 0, len(resp.Items))
-			for _, item := range resp.Items {
-				questions = append(questions, toQuestion(item, false))
+			for i := range resp.Items {
+				questions = append(questions, toQuestion(&resp.Items[i], false))
 			}
 
 			return output.Print(questions)
@@ -134,7 +135,7 @@ func newQuestionCmd() *cobra.Command {
 				return output.PrintError("not_found", "Question not found", nil)
 			}
 
-			return output.Print(toQuestion(resp.Items[0], true))
+			return output.Print(toQuestion(&resp.Items[0], true))
 		},
 	}
 
@@ -169,8 +170,8 @@ func newAnswersCmd() *cobra.Command {
 			}
 
 			answers := make([]Answer, 0, len(resp.Items))
-			for _, item := range resp.Items {
-				answers = append(answers, toAnswer(item))
+			for i := range resp.Items {
+				answers = append(answers, toAnswer(&resp.Items[i]))
 			}
 
 			return output.Print(answers)
@@ -212,7 +213,7 @@ func seGet(endpoint string, params url.Values, result any) error {
 
 	reqURL := baseURL + endpoint + "?" + params.Encode()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -244,7 +245,7 @@ func seGet(endpoint string, params url.Values, result any) error {
 	return json.NewDecoder(reader).Decode(result)
 }
 
-func toQuestion(item seItem, includeBody bool) Question {
+func toQuestion(item *seItem, includeBody bool) Question {
 	q := Question{
 		ID:       item.QuestionID,
 		Title:    item.Title,
@@ -268,7 +269,7 @@ func toQuestion(item seItem, includeBody bool) Question {
 	return q
 }
 
-func toAnswer(item seItem) Answer {
+func toAnswer(item *seItem) Answer {
 	body := cleanHTML(item.Body)
 	if len(body) > 1000 {
 		body = body[:997] + "..."

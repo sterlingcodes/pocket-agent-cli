@@ -12,8 +12,11 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
+
+const mdlsNull = "(null)"
 
 // FileInfo represents information about a file or folder
 type FileInfo struct {
@@ -84,11 +87,10 @@ func NewCmd() *cobra.Command {
 	return cmd
 }
 
-// runAppleScript executes an AppleScript and returns the output
-func runAppleScript(script string) (string, error) {
+// runAppleScript executes an AppleScript
+func runAppleScript(script string) error {
 	cmd := exec.Command("osascript", "-e", script)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
+	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
 	err := cmd.Run()
@@ -97,10 +99,10 @@ func runAppleScript(script string) (string, error) {
 		if errMsg == "" {
 			errMsg = err.Error()
 		}
-		return "", fmt.Errorf("%s", strings.TrimSpace(errMsg))
+		return fmt.Errorf("%s", strings.TrimSpace(errMsg))
 	}
 
-	return strings.TrimSpace(stdout.String()), nil
+	return nil
 }
 
 // runCommand executes a shell command and returns the output
@@ -211,6 +213,37 @@ func newOpenCmd() *cobra.Command {
 	return cmd
 }
 
+// runFinderAction resolves a path, checks it exists, runs an AppleScript built
+// from scriptTemplate (which must contain a single %s for the escaped path),
+// and returns a JSON success result.  action is used for the error code prefix
+// (e.g. "reveal" → "reveal_failed") and successMsg is the human-readable message.
+func runFinderAction(rawPath, scriptTemplate, action, successMsg string) error {
+	path, err := resolvePath(rawPath)
+	if err != nil {
+		return output.PrintError("invalid_path", err.Error(), nil)
+	}
+
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return output.PrintError("path_not_found",
+			fmt.Sprintf("Path does not exist: %s", path),
+			map[string]string{"path": path})
+	}
+
+	script := fmt.Sprintf(scriptTemplate, escapeAppleScript(path))
+
+	err = runAppleScript(script)
+	if err != nil {
+		return output.PrintError(action+"_failed", err.Error(),
+			map[string]string{"path": path})
+	}
+
+	return output.Print(map[string]any{
+		"success": true,
+		"message": successMsg,
+		"path":    path,
+	})
+}
+
 // newRevealCmd reveals a file in Finder
 func newRevealCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -219,35 +252,11 @@ func newRevealCmd() *cobra.Command {
 		Long:  `Opens a Finder window and selects the specified file or folder.`,
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			path, err := resolvePath(args[0])
-			if err != nil {
-				return output.PrintError("invalid_path", err.Error(), nil)
-			}
-
-			// Check if path exists
-			if _, err := os.Stat(path); os.IsNotExist(err) {
-				return output.PrintError("path_not_found",
-					fmt.Sprintf("Path does not exist: %s", path),
-					map[string]string{"path": path})
-			}
-
-			script := fmt.Sprintf(`
+			return runFinderAction(args[0], `
 tell application "Finder"
 	reveal POSIX file "%s"
 	activate
-end tell`, escapeAppleScript(path))
-
-			_, err = runAppleScript(script)
-			if err != nil {
-				return output.PrintError("reveal_failed", err.Error(),
-					map[string]string{"path": path})
-			}
-
-			return output.Print(map[string]any{
-				"success": true,
-				"message": "File revealed in Finder",
-				"path":    path,
-			})
+end tell`, "reveal", "File revealed in Finder")
 		},
 	}
 
@@ -255,6 +264,8 @@ end tell`, escapeAppleScript(path))
 }
 
 // newInfoCmd gets file/folder information
+//
+//nolint:gocyclo // complex but clear sequential logic
 func newInfoCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "info [path]",
@@ -294,7 +305,7 @@ func newInfoCmd() *cobra.Command {
 				// Calculate directory size (capped at 100k files to prevent blocking)
 				var size int64
 				var fileCount int
-				filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
+				_ = filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
 					if err != nil {
 						return nil
 					}
@@ -311,7 +322,7 @@ func newInfoCmd() *cobra.Command {
 				info.SizeHuman = humanReadableSize(size)
 			} else {
 				info.Type = "file"
-				info.IsExecutable = stat.Mode().Perm()&0111 != 0
+				info.IsExecutable = stat.Mode().Perm()&0o111 != 0
 			}
 
 			// Get extended metadata using mdls (outputs fields in alphabetical order)
@@ -325,7 +336,7 @@ func newInfoCmd() *cobra.Command {
 						key := strings.TrimSpace(parts[0])
 						val := strings.TrimSpace(parts[1])
 						val = strings.Trim(val, "\"")
-						if val == "(null)" {
+						if val == mdlsNull {
 							continue
 						}
 						switch key {
@@ -475,7 +486,7 @@ func newTagsCmd() *cobra.Command {
 			}
 
 			var tags []string
-			if mdlsOutput != "(null)" && mdlsOutput != "" {
+			if mdlsOutput != mdlsNull && mdlsOutput != "" {
 				// Parse the plist-style array output
 				mdlsOutput = strings.Trim(mdlsOutput, "()")
 				if mdlsOutput != "" {
@@ -530,7 +541,7 @@ func newTagCmd() *cobra.Command {
 			// First get existing tags
 			existingOutput, _ := runCommand("mdls", "-name", "kMDItemUserTags", "-raw", path)
 			var existingTags []string
-			if existingOutput != "(null)" && existingOutput != "" {
+			if existingOutput != mdlsNull && existingOutput != "" {
 				existingOutput = strings.Trim(existingOutput, "()")
 				if existingOutput != "" {
 					parts := strings.Split(existingOutput, ",")
@@ -609,7 +620,7 @@ func newUntagCmd() *cobra.Command {
 			// Get existing tags
 			existingOutput, _ := runCommand("mdls", "-name", "kMDItemUserTags", "-raw", path)
 			var existingTags []string
-			if existingOutput != "(null)" && existingOutput != "" {
+			if existingOutput != mdlsNull && existingOutput != "" {
 				existingOutput = strings.Trim(existingOutput, "()")
 				if existingOutput != "" {
 					parts := strings.Split(existingOutput, ",")
@@ -650,7 +661,7 @@ func newUntagCmd() *cobra.Command {
 			if len(newTags) == 0 {
 				// Remove the attribute entirely
 				xattrCmd := exec.Command("xattr", "-d", "com.apple.metadata:_kMDItemUserTags", path)
-				xattrCmd.Run() // Ignore error if attribute doesn't exist
+				_ = xattrCmd.Run() // Ignore error if attribute doesn't exist
 			} else {
 				plistTags := "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\"><plist version=\"1.0\"><array>"
 				for _, t := range newTags {
@@ -685,34 +696,10 @@ func newTrashCmd() *cobra.Command {
 		Long:  `Moves a file or folder to the Trash using Finder.`,
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			path, err := resolvePath(args[0])
-			if err != nil {
-				return output.PrintError("invalid_path", err.Error(), nil)
-			}
-
-			// Check if path exists
-			if _, err := os.Stat(path); os.IsNotExist(err) {
-				return output.PrintError("path_not_found",
-					fmt.Sprintf("Path does not exist: %s", path),
-					map[string]string{"path": path})
-			}
-
-			script := fmt.Sprintf(`
+			return runFinderAction(args[0], `
 tell application "Finder"
 	move POSIX file "%s" to trash
-end tell`, escapeAppleScript(path))
-
-			_, err = runAppleScript(script)
-			if err != nil {
-				return output.PrintError("trash_failed", err.Error(),
-					map[string]string{"path": path})
-			}
-
-			return output.Print(map[string]any{
-				"success": true,
-				"message": "File moved to trash",
-				"path":    path,
-			})
+end tell`, "trash", "File moved to trash")
 		},
 	}
 
@@ -720,6 +707,8 @@ end tell`, escapeAppleScript(path))
 }
 
 // newSearchCmd performs a Spotlight search
+//
+//nolint:gocyclo // complex but clear sequential logic
 func newSearchCmd() *cobra.Command {
 	var searchPath string
 	var kind string
@@ -812,7 +801,7 @@ func newSearchCmd() *cobra.Command {
 						mdlsLines := strings.Split(mdlsOutput, "\n")
 						for j, mdLine := range mdlsLines {
 							mdLine = strings.TrimSpace(mdLine)
-							if mdLine == "(null)" {
+							if mdLine == mdlsNull {
 								continue
 							}
 							switch j {

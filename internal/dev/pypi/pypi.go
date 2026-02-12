@@ -10,10 +10,11 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const baseURL = "https://pypi.org"
+var baseURL = "https://pypi.org"
 
 var httpClient = &http.Client{Timeout: 30 * time.Second}
 
@@ -330,7 +331,7 @@ func pypiGet(url string, result any) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return err
 	}

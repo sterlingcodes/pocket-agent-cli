@@ -8,11 +8,12 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const baseURL = "https://api.vercel.com"
+var baseURL = "https://api.vercel.com"
 
 var httpClient = &http.Client{Timeout: 30 * time.Second}
 
@@ -68,6 +69,30 @@ func NewCmd() *cobra.Command {
 	return cmd
 }
 
+// vcList fetches a list endpoint, extracts the array at responseKey, and maps
+// each element through convert.
+func vcList[T any](apiURL, responseKey string, convert func(map[string]any) T) error {
+	token, err := getToken()
+	if err != nil {
+		return err
+	}
+
+	var resp map[string]any
+	if err := vcGet(token, apiURL, &resp); err != nil {
+		return output.PrintError("fetch_failed", err.Error(), nil)
+	}
+
+	items, _ := resp[responseKey].([]any)
+	result := make([]T, 0, len(items))
+	for _, item := range items {
+		if m, ok := item.(map[string]any); ok {
+			result = append(result, convert(m))
+		}
+	}
+
+	return output.Print(result)
+}
+
 func newProjectsCmd() *cobra.Command {
 	var limit int
 
@@ -75,27 +100,8 @@ func newProjectsCmd() *cobra.Command {
 		Use:   "projects",
 		Short: "List all projects",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token, err := getToken()
-			if err != nil {
-				return err
-			}
-
 			url := fmt.Sprintf("%s/v9/projects?limit=%d", baseURL, limit)
-
-			var resp map[string]any
-			if err := vcGet(token, url, &resp); err != nil {
-				return output.PrintError("fetch_failed", err.Error(), nil)
-			}
-
-			projects, _ := resp["projects"].([]any)
-			result := make([]Project, 0, len(projects))
-			for _, p := range projects {
-				if proj, ok := p.(map[string]any); ok {
-					result = append(result, toProject(proj))
-				}
-			}
-
-			return output.Print(result)
+			return vcList(url, "projects", toProject)
 		},
 	}
 
@@ -198,27 +204,8 @@ func newDomainsCmd() *cobra.Command {
 		Use:   "domains",
 		Short: "List all domains",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			token, err := getToken()
-			if err != nil {
-				return err
-			}
-
 			url := fmt.Sprintf("%s/v5/domains?limit=%d", baseURL, limit)
-
-			var resp map[string]any
-			if err := vcGet(token, url, &resp); err != nil {
-				return output.PrintError("fetch_failed", err.Error(), nil)
-			}
-
-			domains, _ := resp["domains"].([]any)
-			result := make([]Domain, 0, len(domains))
-			for _, d := range domains {
-				if dom, ok := d.(map[string]any); ok {
-					result = append(result, toDomain(dom))
-				}
-			}
-
-			return output.Print(result)
+			return vcList(url, "domains", toDomain)
 		},
 	}
 
@@ -277,7 +264,7 @@ func vcGet(token, url string, result any) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -293,7 +280,7 @@ func vcGet(token, url string, result any) error {
 
 	if resp.StatusCode >= 400 {
 		var errResp map[string]any
-		json.NewDecoder(resp.Body).Decode(&errResp)
+		_ = json.NewDecoder(resp.Body).Decode(&errResp)
 		if errObj, ok := errResp["error"].(map[string]any); ok {
 			if msg, ok := errObj["message"].(string); ok {
 				return fmt.Errorf("%s", msg)

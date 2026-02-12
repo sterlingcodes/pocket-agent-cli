@@ -8,8 +8,10 @@ import (
 	"text/tabwriter"
 )
 
+const formatJSON = "json"
+
 var (
-	format  = "json"
+	format  = formatJSON
 	verbose = false
 )
 
@@ -59,7 +61,7 @@ type Error struct {
 // Print outputs data in the configured format
 func Print(data any) error {
 	switch format {
-	case "json":
+	case formatJSON:
 		return printJSON(Response{Success: true, Data: data})
 	case "text":
 		return printText(data)
@@ -82,8 +84,8 @@ func PrintError(code, message string, details any) error {
 	}
 
 	switch format {
-	case "json":
-		printJSON(resp)
+	case formatJSON:
+		_ = printJSON(resp)
 	default:
 		fmt.Fprintf(os.Stderr, "Error [%s]: %s\n", code, message)
 	}

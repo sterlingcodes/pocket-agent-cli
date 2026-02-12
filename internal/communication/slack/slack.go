@@ -10,11 +10,12 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const baseURL = "https://slack.com/api"
+var baseURL = "https://slack.com/api"
 
 var httpClient = &http.Client{Timeout: 30 * time.Second}
 
@@ -169,7 +170,7 @@ func newMessagesCmd() *cobra.Command {
 			channelID := args[0]
 
 			// If it doesn't look like a channel ID, try to resolve the name
-			if len(channelID) > 0 && channelID[0] != 'C' && channelID[0] != 'G' && channelID[0] != 'D' {
+			if channelID != "" && channelID[0] != 'C' && channelID[0] != 'G' && channelID[0] != 'D' {
 				resolved, err := resolveChannelID(token, channelID)
 				if err != nil {
 					return output.PrintError("channel_not_found", "Could not find channel: "+channelID, map[string]any{
@@ -261,7 +262,7 @@ func newSendCmd() *cobra.Command {
 			channelID := channel
 
 			// If it doesn't look like a channel ID, try to resolve the name
-			if len(channelID) > 0 && channelID[0] != 'C' && channelID[0] != 'G' && channelID[0] != 'D' {
+			if channelID != "" && channelID[0] != 'C' && channelID[0] != 'G' && channelID[0] != 'D' {
 				resolved, err := resolveChannelID(token, channelID)
 				if err != nil {
 					return output.PrintError("channel_not_found", "Could not find channel: "+channelID, map[string]any{
@@ -312,7 +313,7 @@ func newSendCmd() *cobra.Command {
 
 	cmd.Flags().StringVarP(&channel, "channel", "c", "", "Channel ID or name (required)")
 	cmd.Flags().StringVarP(&threadTS, "thread", "t", "", "Thread timestamp (for replies)")
-	cmd.MarkFlagRequired("channel")
+	_ = cmd.MarkFlagRequired("channel")
 
 	return cmd
 }
@@ -363,7 +364,8 @@ func newUsersCmd() *cobra.Command {
 			}
 
 			users := make([]User, 0, len(resp.Members))
-			for _, m := range resp.Members {
+			for i := range resp.Members {
+				m := &resp.Members[i]
 				if m.Deleted {
 					continue
 				}
@@ -406,7 +408,7 @@ func newDMCmd() *cobra.Command {
 			message := args[1]
 
 			// If it doesn't look like a user ID, try to resolve the username
-			if len(userID) > 0 && userID[0] != 'U' && userID[0] != 'W' {
+			if userID != "" && userID[0] != 'U' && userID[0] != 'W' {
 				resolved, err := resolveUserID(token, userID)
 				if err != nil {
 					return output.PrintError("user_not_found", "Could not find user: "+userID, map[string]any{
@@ -571,7 +573,7 @@ func slackGet(token, method string, params url.Values, result any) error {
 
 	reqURL := fmt.Sprintf("%s/%s?%s", baseURL, method, params.Encode())
 
-	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 	if err != nil {
 		return output.PrintError("request_failed", err.Error(), nil)
 	}

@@ -11,12 +11,13 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
 const (
-	tokenURL    = "https://oauth2.googleapis.com/token"
+	tokenURL    = "https://oauth2.googleapis.com/token" //nolint:gosec // OAuth endpoint URL, not a credential
 	calendarAPI = "https://www.googleapis.com/calendar/v3"
 )
 
@@ -162,9 +163,9 @@ func (c *calendarClient) doRequest(method, endpoint string, body interface{}) ([
 			} `json:"error"`
 		}
 		if json.Unmarshal(respBody, &errResp) == nil && errResp.Error.Message != "" {
-			return nil, fmt.Errorf("Google Calendar API error: %s", errResp.Error.Message)
+			return nil, fmt.Errorf("google calendar API error: %s", errResp.Error.Message)
 		}
-		return nil, fmt.Errorf("Google Calendar API error (HTTP %d): %s", resp.StatusCode, string(respBody))
+		return nil, fmt.Errorf("google calendar API error (HTTP %d): %s", resp.StatusCode, string(respBody))
 	}
 
 	return respBody, nil
@@ -199,7 +200,8 @@ type calendarEvent struct {
 
 func formatEvents(events []calendarEvent) []map[string]any {
 	result := make([]map[string]any, len(events))
-	for i, e := range events {
+	for i := range events {
+		e := &events[i]
 		startTime := e.Start.DateTime
 		if startTime == "" {
 			startTime = e.Start.Date
@@ -408,9 +410,9 @@ func newCreateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&location, "location", "", "Location")
 	cmd.Flags().StringVarP(&calendarID, "calendar", "c", "primary", "Calendar ID")
 	cmd.Flags().BoolVar(&allDay, "all-day", false, "Create an all-day event (use YYYY-MM-DD format)")
-	cmd.MarkFlagRequired("title")
-	cmd.MarkFlagRequired("start")
-	cmd.MarkFlagRequired("end")
+	_ = cmd.MarkFlagRequired("title")
+	_ = cmd.MarkFlagRequired("start")
+	_ = cmd.MarkFlagRequired("end")
 
 	return cmd
 }

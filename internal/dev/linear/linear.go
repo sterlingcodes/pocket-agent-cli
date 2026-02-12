@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
@@ -84,7 +85,7 @@ func (c *linearClient) doQuery(query string, variables map[string]any) ([]byte, 
 	}
 
 	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("Linear API error (HTTP %d): %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("linear API error (HTTP %d): %s", resp.StatusCode, string(body))
 	}
 
 	// Check for GraphQL errors
@@ -94,7 +95,7 @@ func (c *linearClient) doQuery(query string, variables map[string]any) ([]byte, 
 		} `json:"errors"`
 	}
 	if json.Unmarshal(body, &result) == nil && len(result.Errors) > 0 {
-		return nil, fmt.Errorf("Linear API error: %s", result.Errors[0].Message)
+		return nil, fmt.Errorf("linear API error: %s", result.Errors[0].Message)
 	}
 
 	return body, nil
@@ -191,7 +192,8 @@ func newIssuesCmd() *cobra.Command {
 			}
 
 			issues := make([]map[string]any, len(result.Data.Issues.Nodes))
-			for i, issue := range result.Data.Issues.Nodes {
+			for i := range result.Data.Issues.Nodes {
+				issue := &result.Data.Issues.Nodes[i]
 				item := map[string]any{
 					"id":         issue.ID,
 					"identifier": issue.Identifier,
@@ -399,8 +401,8 @@ func newCreateCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&team, "team", "t", "", "Team key (required)")
 	cmd.Flags().StringVar(&title, "title", "", "Issue title (required)")
 	cmd.Flags().IntVarP(&priority, "priority", "p", 0, "Priority (0=none, 1=urgent, 2=high, 3=medium, 4=low)")
-	cmd.MarkFlagRequired("team")
-	cmd.MarkFlagRequired("title")
+	_ = cmd.MarkFlagRequired("team")
+	_ = cmd.MarkFlagRequired("title")
 
 	return cmd
 }

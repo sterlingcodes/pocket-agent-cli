@@ -10,11 +10,12 @@ import (
 	"unicode/utf8"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-// ClipboardContent represents the content of the clipboard
-type ClipboardContent struct {
+// Content represents the content of the clipboard
+type Content struct {
 	Content   string `json:"content"`
 	Length    int    `json:"length"`
 	Lines     int    `json:"lines"`
@@ -98,7 +99,7 @@ func newGetCmd() *cobra.Command {
 				lines--
 			}
 
-			result := ClipboardContent{
+			result := Content{
 				Content: content,
 				Length:  len(content),
 				Lines:   lines,

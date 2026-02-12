@@ -10,40 +10,43 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-// RedisValue is LLM-friendly output for a GET result
-type RedisValue struct {
+const redisNil = "(nil)"
+
+// Value is LLM-friendly output for a GET result
+type Value struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
 	Type  string `json:"type"`
 }
 
-// RedisSetResult is LLM-friendly output for a SET result
-type RedisSetResult struct {
+// SetResult is LLM-friendly output for a SET result
+type SetResult struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
 	TTL   int    `json:"ttl,omitempty"`
 	OK    bool   `json:"ok"`
 }
 
-// RedisDelResult is LLM-friendly output for a DEL result
-type RedisDelResult struct {
+// DelResult is LLM-friendly output for a DEL result
+type DelResult struct {
 	Keys    []string `json:"keys"`
 	Deleted int64    `json:"deleted"`
 }
 
-// RedisKeys is LLM-friendly output for a KEYS result
-type RedisKeys struct {
+// Keys is LLM-friendly output for a KEYS result
+type Keys struct {
 	Pattern string   `json:"pattern"`
 	Keys    []string `json:"keys"`
 	Count   int      `json:"count"`
 }
 
-// RedisInfo is LLM-friendly output for an INFO result
-type RedisInfo struct {
+// Info is LLM-friendly output for an INFO result
+type Info struct {
 	Version          string `json:"version"`
 	Mode             string `json:"mode"`
 	OS               string `json:"os"`
@@ -129,6 +132,7 @@ func readResponse(reader *bufio.Reader) (string, error) {
 	return readResponseDepth(reader, 0)
 }
 
+//nolint:gocyclo // complex but clear sequential logic
 func readResponseDepth(reader *bufio.Reader, depth int) (string, error) {
 	if depth > maxRESPDepth {
 		return "", fmt.Errorf("RESP nesting depth exceeded maximum of %d", maxRESPDepth)
@@ -139,7 +143,7 @@ func readResponseDepth(reader *bufio.Reader, depth int) (string, error) {
 	}
 	line = strings.TrimRight(line, "\r\n")
 
-	if len(line) == 0 {
+	if line == "" {
 		return "", fmt.Errorf("empty response")
 	}
 
@@ -166,7 +170,7 @@ func readResponseDepth(reader *bufio.Reader, depth int) (string, error) {
 			return "", fmt.Errorf("invalid bulk string length: %s", payload)
 		}
 		if length == -1 {
-			return "(nil)", nil
+			return redisNil, nil
 		}
 		data := make([]byte, length+2) // +2 for \r\n
 		_, err = readFull(reader, data)
@@ -182,7 +186,7 @@ func readResponseDepth(reader *bufio.Reader, depth int) (string, error) {
 			return "", fmt.Errorf("invalid array length: %s", payload)
 		}
 		if count == -1 {
-			return "(nil)", nil
+			return redisNil, nil
 		}
 		var parts []string
 		for i := 0; i < count; i++ {
@@ -233,7 +237,7 @@ func sendCommandArray(conn net.Conn, reader *bufio.Reader, args ...string) ([]st
 	}
 	line = strings.TrimRight(line, "\r\n")
 
-	if len(line) == 0 {
+	if line == "" {
 		return nil, fmt.Errorf("empty response")
 	}
 
@@ -291,11 +295,11 @@ func newGetCmd() *cobra.Command {
 			}
 
 			valType := "string"
-			if value == "(nil)" {
+			if value == redisNil {
 				valType = "none"
 			}
 
-			return output.Print(RedisValue{
+			return output.Print(Value{
 				Key:   key,
 				Value: value,
 				Type:  valType,
@@ -333,7 +337,7 @@ func newSetCmd() *cobra.Command {
 				return output.PrintError("command_failed", err.Error(), nil)
 			}
 
-			return output.Print(RedisSetResult{
+			return output.Print(SetResult{
 				Key:   key,
 				Value: value,
 				TTL:   ttl,
@@ -367,7 +371,7 @@ func newDelCmd() *cobra.Command {
 
 			deleted, _ := strconv.ParseInt(resp, 10, 64)
 
-			return output.Print(RedisDelResult{
+			return output.Print(DelResult{
 				Keys:    args,
 				Deleted: deleted,
 			})
@@ -406,7 +410,7 @@ func newKeysCmd() *cobra.Command {
 				keys = keys[:limit]
 			}
 
-			return output.Print(RedisKeys{
+			return output.Print(Keys{
 				Pattern: pattern,
 				Keys:    keys,
 				Count:   len(keys),
@@ -459,7 +463,7 @@ func newInfoCmd() *cobra.Command {
 
 			uptime, _ := strconv.ParseInt(info["uptime_in_seconds"], 10, 64)
 
-			return output.Print(RedisInfo{
+			return output.Print(Info{
 				Version:          info["redis_version"],
 				Mode:             info["redis_mode"],
 				OS:               info["os"],

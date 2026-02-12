@@ -40,7 +40,7 @@ func TestConvertAppleTimestamp(t *testing.T) {
 			if !tt.wantEmpty && got == "" {
 				t.Error("expected non-empty result")
 			}
-			if tt.contains != "" && len(got) > 0 {
+			if tt.contains != "" && got != "" {
 				if !containsStr(got, tt.contains) {
 					t.Errorf("expected %q to contain %q", got, tt.contains)
 				}
@@ -50,7 +50,7 @@ func TestConvertAppleTimestamp(t *testing.T) {
 }
 
 func containsStr(s, sub string) bool {
-	return len(s) >= len(sub) && (s == sub || len(s) > 0 && containsSubstring(s, sub))
+	return len(s) >= len(sub) && (s == sub || s != "" && containsSubstring(s, sub))
 }
 
 func containsSubstring(s, sub string) bool {

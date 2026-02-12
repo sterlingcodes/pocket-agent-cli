@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
@@ -319,6 +320,8 @@ end tell`, escapeAppleScript(query))
 }
 
 // newGetCmd gets full contact details by name
+//
+//nolint:gocyclo // complex but clear sequential logic
 func newGetCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get [name]",
@@ -555,7 +558,7 @@ end tell`
 				parts := strings.Split(item, "|||")
 				if len(parts) >= 2 {
 					count := 0
-					fmt.Sscanf(strings.TrimSpace(parts[1]), "%d", &count)
+					_, _ = fmt.Sscanf(strings.TrimSpace(parts[1]), "%d", &count)
 					groups = append(groups, Group{
 						Name:  strings.TrimSpace(parts[0]),
 						Count: count,
@@ -693,15 +696,15 @@ func newCreateCmd() *cobra.Command {
 
 			// Build properties string
 			var propsBuilder strings.Builder
-			propsBuilder.WriteString(fmt.Sprintf(`{first name:"%s"`, escapeAppleScript(firstName)))
+			propsBuilder.WriteString(fmt.Sprintf(`{first name:"%s"`, escapeAppleScript(firstName))) //nolint:gocritic // AppleScript property syntax requires this format
 			if lastName != "" {
-				propsBuilder.WriteString(fmt.Sprintf(`, last name:"%s"`, escapeAppleScript(lastName)))
+				propsBuilder.WriteString(fmt.Sprintf(`, last name:"%s"`, escapeAppleScript(lastName))) //nolint:gocritic // AppleScript property syntax requires this format
 			}
 			if company != "" {
-				propsBuilder.WriteString(fmt.Sprintf(`, organization:"%s"`, escapeAppleScript(company)))
+				propsBuilder.WriteString(fmt.Sprintf(`, organization:"%s"`, escapeAppleScript(company))) //nolint:gocritic // AppleScript property syntax requires this format
 			}
 			if note != "" {
-				propsBuilder.WriteString(fmt.Sprintf(`, note:"%s"`, escapeAppleScript(note)))
+				propsBuilder.WriteString(fmt.Sprintf(`, note:"%s"`, escapeAppleScript(note))) //nolint:gocritic // AppleScript property syntax requires this format
 			}
 			propsBuilder.WriteString("}")
 

@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"os/exec"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
@@ -90,7 +92,8 @@ func runKubectl(ctx context.Context, args ...string) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, "kubectl", args...)
 	out, err := cmd.Output()
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
 			return nil, fmt.Errorf("kubectl error: %s", strings.TrimSpace(string(exitErr.Stderr)))
 		}
 		return nil, fmt.Errorf("kubectl failed: %w", err)
@@ -117,6 +120,7 @@ func formatAge(t time.Time) string {
 	}
 }
 
+//nolint:gocyclo // complex but clear sequential logic
 func newPodsCmd() *cobra.Command {
 	var namespace string
 	var all bool
@@ -330,7 +334,6 @@ func newDeploymentsCmd() *cobra.Command {
 					}
 				}
 
-				// Ready = readyReplicas / spec.replicas
 				replicas := getInt(spec, "replicas")
 				readyReplicas := getInt(status, "readyReplicas")
 				dep.Ready = fmt.Sprintf("%d/%d", readyReplicas, replicas)
@@ -348,6 +351,7 @@ func newDeploymentsCmd() *cobra.Command {
 	return cmd
 }
 
+//nolint:gocyclo // complex but clear sequential logic
 func newServicesCmd() *cobra.Command {
 	var namespace string
 	var all bool

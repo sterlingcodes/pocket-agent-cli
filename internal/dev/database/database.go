@@ -6,8 +6,9 @@ import (
 	"os"
 	"strings"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3" // sqlite3 driver registration
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
@@ -203,11 +204,12 @@ func newSchemaCmd() *cobra.Command {
 				table := Table{Name: tableName}
 
 				// Get column info using PRAGMA
-				pragmaQuery := fmt.Sprintf("PRAGMA table_info(\"%s\")", strings.ReplaceAll(tableName, "\"", "\"\""))
+				pragmaQuery := fmt.Sprintf("PRAGMA table_info(\"%s\")", strings.ReplaceAll(tableName, "\"", "\"\"")) //nolint:gocritic // SQL syntax requires this format
 				colRows, err := db.Query(pragmaQuery)
 				if err != nil {
 					return output.PrintError("query_failed", fmt.Sprintf("Failed to get columns for %s: %s", tableName, err.Error()), nil)
 				}
+				defer colRows.Close() //nolint:gocritic // rows must be closed after each query iteration
 
 				for colRows.Next() {
 					var cid int
@@ -216,7 +218,6 @@ func newSchemaCmd() *cobra.Command {
 					var dfltValue sql.NullString
 
 					if err := colRows.Scan(&cid, &name, &colType, &notNull, &dfltValue, &pk); err != nil {
-						colRows.Close()
 						return output.PrintError("scan_failed", fmt.Sprintf("Failed to scan column info: %s", err.Error()), nil)
 					}
 
@@ -233,13 +234,12 @@ func newSchemaCmd() *cobra.Command {
 
 					table.Columns = append(table.Columns, col)
 				}
-				colRows.Close()
 				if err := colRows.Err(); err != nil {
 					return output.PrintError("query_failed", fmt.Sprintf("Column iteration error: %s", err.Error()), nil)
 				}
 
 				// Get row count
-				countQuery := fmt.Sprintf("SELECT COUNT(*) FROM \"%s\"", strings.ReplaceAll(tableName, "\"", "\"\""))
+				countQuery := fmt.Sprintf("SELECT COUNT(*) FROM \"%s\"", strings.ReplaceAll(tableName, "\"", "\"\"")) //nolint:gosec,gocritic // tableName comes from sqlite_master, not user input; SQL syntax requires this format
 				var count int64
 				if err := db.QueryRow(countQuery).Scan(&count); err == nil {
 					table.RowCount = count

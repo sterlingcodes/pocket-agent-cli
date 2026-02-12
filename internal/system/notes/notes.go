@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
@@ -239,7 +240,7 @@ end tell`
 				parts := strings.Split(item, "|||")
 				if len(parts) >= 2 {
 					count := 0
-					fmt.Sscanf(strings.TrimSpace(parts[1]), "%d", &count)
+					_, _ = fmt.Sscanf(strings.TrimSpace(parts[1]), "%d", &count)
 					folders = append(folders, Folder{
 						Name:  strings.TrimSpace(parts[0]),
 						Count: count,

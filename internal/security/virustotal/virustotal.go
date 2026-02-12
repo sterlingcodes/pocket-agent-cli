@@ -11,13 +11,15 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const baseURL = "https://www.virustotal.com/api/v3"
-
-var httpClient = &http.Client{Timeout: 30 * time.Second}
+var (
+	baseURL    = "https://www.virustotal.com/api/v3"
+	httpClient = &http.Client{Timeout: 30 * time.Second}
+)
 
 // URLScanResult represents the result of a URL scan
 type URLScanResult struct {
@@ -192,7 +194,7 @@ func newURLCmd() *cobra.Command {
 				time.Sleep(3 * time.Second)
 
 				pollCtx, pollCancel := context.WithTimeout(context.Background(), 30*time.Second)
-				pollBody, pollErr := doRequest(pollCtx, "GET", baseURL+"/analyses/"+analysisID, nil, "")
+				pollBody, pollErr := doRequest(pollCtx, "GET", baseURL+"/analyses/"+analysisID, nil, "") //nolint:misspell // correct API path
 				pollCancel()
 
 				if pollErr != nil {

@@ -10,11 +10,12 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const baseURL = "https://api.telegram.org/bot"
+var baseURL = "https://api.telegram.org/bot"
 
 var httpClient = &http.Client{Timeout: 30 * time.Second}
 
@@ -291,7 +292,7 @@ func newSendCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&chatID, "chat", "c", "", "Chat ID (required)")
 	cmd.Flags().StringVarP(&parseMode, "parse", "p", "", "Parse mode: Markdown, MarkdownV2, or HTML")
 	cmd.Flags().BoolVarP(&disableNotification, "silent", "s", false, "Send silently without notification")
-	cmd.MarkFlagRequired("chat")
+	_ = cmd.MarkFlagRequired("chat")
 
 	return cmd
 }
@@ -340,14 +341,7 @@ func newChatsCmd() *cobra.Command {
 				seen[chatID] = true
 
 				c := u.Message.Chat
-				chats = append(chats, Chat{
-					ID:        c.ID,
-					Type:      c.Type,
-					Title:     c.Title,
-					Username:  c.Username,
-					FirstName: c.FirstName,
-					LastName:  c.LastName,
-				})
+				chats = append(chats, Chat(c))
 
 				if len(chats) >= limit {
 					break

@@ -14,10 +14,13 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3" // sqlite3 driver registration
 )
+
+const bookmarksBarFolder = "BookmarksBar"
 
 // Tab represents a Safari tab
 type Tab struct {
@@ -101,7 +104,7 @@ func runAppleScript(script string) (string, error) {
 		// Check if Safari is not running
 		if strings.Contains(errMsg, "Application isn't running") ||
 			strings.Contains(errMsg, "Connection is invalid") {
-			return "", fmt.Errorf("Safari is not running. Please launch Safari first")
+			return "", fmt.Errorf("safari is not running. Please launch Safari first")
 		}
 		return "", fmt.Errorf("%s", strings.TrimSpace(errMsg))
 	}
@@ -424,7 +427,8 @@ func newCloseCmd() *cobra.Command {
 			}
 
 			var script string
-			if closeWindow {
+			switch {
+			case closeWindow:
 				if windowIndex > 0 {
 					script = fmt.Sprintf(`
 tell application "Safari"
@@ -438,7 +442,7 @@ tell application "Safari"
 	return "Window closed"
 end tell`
 				}
-			} else if windowIndex > 0 && tabIndex > 0 {
+			case windowIndex > 0 && tabIndex > 0:
 				script = fmt.Sprintf(`
 tell application "Safari"
 	set theTab to tab %d of window %d
@@ -446,7 +450,7 @@ tell application "Safari"
 	close theTab
 	return tabTitle
 end tell`, tabIndex, windowIndex)
-			} else {
+			default:
 				script = `
 tell application "Safari"
 	set theTab to current tab of front window
@@ -528,11 +532,10 @@ func newBookmarksCmd() *cobra.Command {
 			// The plist has a nested structure: Children[] -> Children[] -> URLString, URIDictionary.title
 			targetFolder := folder
 			if targetFolder == "" {
-				targetFolder = "BookmarksBar"
+				targetFolder = bookmarksBarFolder
 			}
 
-			var bookmarks []Bookmark
-			bookmarks = parseBookmarksJSON(stdout.Bytes(), targetFolder, limit)
+			bookmarks := parseBookmarksJSON(stdout.Bytes(), targetFolder, limit)
 
 			folderName := folder
 			if folderName == "" {
@@ -575,6 +578,7 @@ func parseBookmarksJSON(data []byte, targetFolder string, limit int) []Bookmark 
 	return bookmarks
 }
 
+//nolint:gocyclo // complex but clear sequential logic
 func collectBookmarks(node *plistNode, targetFolder string, bookmarks *[]Bookmark, limit int) {
 	if limit > 0 && len(*bookmarks) >= limit {
 		return
@@ -583,11 +587,12 @@ func collectBookmarks(node *plistNode, targetFolder string, bookmarks *[]Bookmar
 	// Check if this is the target folder
 	isTarget := false
 	if node.WebBookmarkType == "WebBookmarkTypeList" {
-		if targetFolder == "BookmarksBar" && node.Title == "BookmarksBar" {
+		switch {
+		case targetFolder == bookmarksBarFolder && node.Title == bookmarksBarFolder:
 			isTarget = true
-		} else if targetFolder == "BookmarksMenu" && node.Title == "BookmarksMenu" {
+		case targetFolder == "BookmarksMenu" && node.Title == "BookmarksMenu":
 			isTarget = true
-		} else if node.Title == targetFolder {
+		case node.Title == targetFolder:
 			isTarget = true
 		}
 	}
@@ -806,6 +811,8 @@ return "Added to Reading List"`, escapeAppleScript(url))
 }
 
 // newHistoryCmd gets recent browser history
+//
+//nolint:gocyclo // complex but clear sequential logic
 func newHistoryCmd() *cobra.Command {
 	var limit int
 	var days int

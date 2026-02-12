@@ -12,16 +12,17 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
 var httpClient = &http.Client{Timeout: 30 * time.Second}
 
-const baseURL = "https://api.github.com"
+var baseURL = "https://api.github.com"
 
-// GistSummary is LLM-friendly gist list item
-type GistSummary struct {
+// Summary is LLM-friendly gist list item
+type Summary struct {
 	ID          string   `json:"id"`
 	Description string   `json:"description,omitempty"`
 	Public      bool     `json:"public"`
@@ -31,26 +32,26 @@ type GistSummary struct {
 	URL         string   `json:"url"`
 }
 
-// GistDetail is LLM-friendly gist detail
-type GistDetail struct {
-	ID          string     `json:"id"`
-	Description string     `json:"description,omitempty"`
-	Public      bool       `json:"public"`
-	Files       []GistFile `json:"files"`
-	CreatedAt   string     `json:"created_at"`
-	URL         string     `json:"url"`
+// Detail is LLM-friendly gist detail
+type Detail struct {
+	ID          string `json:"id"`
+	Description string `json:"description,omitempty"`
+	Public      bool   `json:"public"`
+	Files       []File `json:"files"`
+	CreatedAt   string `json:"created_at"`
+	URL         string `json:"url"`
 }
 
-// GistFile is LLM-friendly gist file
-type GistFile struct {
+// File is LLM-friendly gist file
+type File struct {
 	Filename string `json:"filename"`
 	Language string `json:"language,omitempty"`
 	Size     int    `json:"size"`
 	Content  string `json:"content"`
 }
 
-// GistCreated is the result of creating a gist
-type GistCreated struct {
+// Created is the result of creating a gist
+type Created struct {
 	ID          string `json:"id"`
 	URL         string `json:"url"`
 	Description string `json:"description,omitempty"`
@@ -91,9 +92,9 @@ func newListCmd() *cobra.Command {
 				return output.PrintError("fetch_failed", err.Error(), nil)
 			}
 
-			results := make([]GistSummary, 0, len(data))
+			results := make([]Summary, 0, len(data))
 			for _, g := range data {
-				results = append(results, toGistSummary(g))
+				results = append(results, toSummary(g))
 			}
 
 			return output.Print(results)
@@ -123,7 +124,7 @@ func newGetCmd() *cobra.Command {
 				return output.PrintError("fetch_failed", err.Error(), nil)
 			}
 
-			return output.Print(toGistDetail(data))
+			return output.Print(toDetail(data))
 		},
 	}
 
@@ -228,7 +229,7 @@ func createGist(token, content, desc, filename string, public bool) error {
 		return output.PrintError("parse_failed", err.Error(), nil)
 	}
 
-	result := GistCreated{
+	result := Created{
 		ID:          getString(data, "id"),
 		URL:         getString(data, "html_url"),
 		Description: getString(data, "description"),
@@ -242,7 +243,7 @@ func ghGet(token, reqURL string, result any) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -271,8 +272,8 @@ func ghGet(token, reqURL string, result any) error {
 	return json.NewDecoder(resp.Body).Decode(result)
 }
 
-func toGistSummary(g map[string]any) GistSummary {
-	summary := GistSummary{
+func toSummary(g map[string]any) Summary {
+	summary := Summary{
 		ID:          getString(g, "id"),
 		Description: getString(g, "description"),
 		Public:      getBool(g, "public"),
@@ -290,8 +291,8 @@ func toGistSummary(g map[string]any) GistSummary {
 	return summary
 }
 
-func toGistDetail(g map[string]any) GistDetail {
-	detail := GistDetail{
+func toDetail(g map[string]any) Detail {
+	detail := Detail{
 		ID:          getString(g, "id"),
 		Description: getString(g, "description"),
 		Public:      getBool(g, "public"),
@@ -302,7 +303,7 @@ func toGistDetail(g map[string]any) GistDetail {
 	if files, ok := g["files"].(map[string]any); ok {
 		for _, v := range files {
 			if file, ok := v.(map[string]any); ok {
-				detail.Files = append(detail.Files, GistFile{
+				detail.Files = append(detail.Files, File{
 					Filename: getString(file, "filename"),
 					Language: getString(file, "language"),
 					Size:     getInt(file, "size"),

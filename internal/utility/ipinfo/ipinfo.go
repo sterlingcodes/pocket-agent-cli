@@ -9,10 +9,11 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const baseURL = "https://ipinfo.io"
+var baseURL = "https://ipinfo.io"
 
 var httpClient = &http.Client{Timeout: 30 * time.Second}
 
@@ -83,7 +84,7 @@ func fetchIPInfo(ip string) error {
 		reqURL = fmt.Sprintf("%s/%s/json", baseURL, ip)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 	if err != nil {
 		return output.PrintError("fetch_failed", err.Error(), nil)
 	}

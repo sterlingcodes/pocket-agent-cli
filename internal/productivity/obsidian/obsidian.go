@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
@@ -259,7 +260,7 @@ func newReadCmd() *cobra.Command {
 			notePath := args[0]
 			// Add .md extension if not present
 			if !strings.HasSuffix(strings.ToLower(notePath), ".md") {
-				notePath = notePath + ".md"
+				notePath += ".md"
 			}
 
 			fullPath := filepath.Join(vaultPath, notePath)
@@ -304,7 +305,7 @@ func newReadCmd() *cobra.Command {
 // newWriteCmd creates or updates a note
 func newWriteCmd() *cobra.Command {
 	var vault string
-	var append bool
+	var appendMode bool
 
 	cmd := &cobra.Command{
 		Use:   "write [note] [content]",
@@ -322,14 +323,14 @@ func newWriteCmd() *cobra.Command {
 
 			// Add .md extension if not present
 			if !strings.HasSuffix(strings.ToLower(notePath), ".md") {
-				notePath = notePath + ".md"
+				notePath += ".md"
 			}
 
 			fullPath := filepath.Join(vaultPath, notePath)
 
 			// Ensure parent directory exists
 			parentDir := filepath.Dir(fullPath)
-			if err := os.MkdirAll(parentDir, 0755); err != nil {
+			if err := os.MkdirAll(parentDir, 0o755); err != nil {
 				return output.PrintError("write_error", "Failed to create directory: "+err.Error(), nil)
 			}
 
@@ -339,7 +340,7 @@ func newWriteCmd() *cobra.Command {
 			// Check if file exists
 			if _, err := os.Stat(fullPath); err == nil {
 				existed = true
-				if append {
+				if appendMode {
 					// Read existing content and append
 					existing, err := os.ReadFile(fullPath)
 					if err != nil {
@@ -354,14 +355,14 @@ func newWriteCmd() *cobra.Command {
 			}
 
 			// Write content
-			if err := os.WriteFile(fullPath, []byte(finalContent), 0644); err != nil {
+			if err := os.WriteFile(fullPath, []byte(finalContent), 0o600); err != nil {
 				return output.PrintError("write_error", "Failed to write note: "+err.Error(), nil)
 			}
 
 			relPath, _ := filepath.Rel(vaultPath, fullPath)
 			action := "created"
 			if existed {
-				if append {
+				if appendMode {
 					action = "appended"
 				} else {
 					action = "updated"
@@ -380,12 +381,14 @@ func newWriteCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&vault, "vault", "", "Vault name or path (default: configured vault)")
-	cmd.Flags().BoolVarP(&append, "append", "a", false, "Append to existing note instead of overwriting")
+	cmd.Flags().BoolVarP(&appendMode, "append", "a", false, "Append to existing note instead of overwriting")
 
 	return cmd
 }
 
 // newSearchCmd searches notes by content
+//
+//nolint:gocyclo // complex but clear sequential logic
 func newSearchCmd() *cobra.Command {
 	var vault string
 	var limit int
@@ -564,13 +567,13 @@ func newDailyCmd() *cobra.Command {
 			if !exists && create {
 				// Create the daily note
 				parentDir := filepath.Dir(fullPath)
-				if err := os.MkdirAll(parentDir, 0755); err != nil {
+				if err := os.MkdirAll(parentDir, 0o755); err != nil {
 					return output.PrintError("write_error", "Failed to create directory: "+err.Error(), nil)
 				}
 
 				// Create with default template
 				template := fmt.Sprintf("# %s\n\n", targetDate.Format("Monday, January 2, 2006"))
-				if err := os.WriteFile(fullPath, []byte(template), 0644); err != nil {
+				if err := os.WriteFile(fullPath, []byte(template), 0o600); err != nil {
 					return output.PrintError("write_error", "Failed to create daily note: "+err.Error(), nil)
 				}
 

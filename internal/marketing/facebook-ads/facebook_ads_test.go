@@ -39,7 +39,7 @@ func writeTestConfig(t *testing.T, values map[string]string) {
 	if err != nil {
 		t.Fatalf("marshal config: %v", err)
 	}
-	if err := os.WriteFile(testConfigPath, data, 0600); err != nil {
+	if err := os.WriteFile(testConfigPath, data, 0o600); err != nil {
 		t.Fatalf("write config: %v", err)
 	}
 }
@@ -200,7 +200,7 @@ func TestDoGetSuccess(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"data": []any{
 				map[string]any{"id": "123", "name": "Test Campaign"},
 			},
@@ -232,7 +232,7 @@ func TestDoGetSuccess(t *testing.T) {
 func TestDoGetAPIError(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"error": map[string]any{
 				"message": "Invalid token",
 				"type":    "OAuthException",
@@ -263,7 +263,7 @@ func TestDoGetAPIError(t *testing.T) {
 func TestDoGetHTTPError(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
-		w.Write([]byte("internal error"))
+		_, _ = w.Write([]byte("internal error"))
 	}))
 	defer ts.Close()
 
@@ -302,7 +302,7 @@ func TestDoPostSuccess(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"id": "123"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"id": "123"})
 	}))
 	defer ts.Close()
 
@@ -324,7 +324,7 @@ func TestDoPostSuccess(t *testing.T) {
 func TestDoPostHTTPError(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(401)
-		w.Write([]byte("unauthorized"))
+		_, _ = w.Write([]byte("unauthorized"))
 	}))
 	defer ts.Close()
 

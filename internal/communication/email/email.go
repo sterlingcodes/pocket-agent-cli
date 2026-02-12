@@ -11,13 +11,14 @@ import (
 	"net/mail"
 	"net/smtp"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
@@ -68,7 +69,7 @@ func newMailboxesCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			defer c.Logout()
+			defer func() { _ = c.Logout() }()
 
 			mailboxes := make(chan *imap.MailboxInfo, 50)
 			done := make(chan error, 1)
@@ -113,7 +114,7 @@ func newListCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			defer c.Logout()
+			defer func() { _ = c.Logout() }()
 
 			mbox, err := c.Select(mailbox, true)
 			if err != nil {
@@ -127,8 +128,8 @@ func newListCmd() *cobra.Command {
 			// Get the last N messages
 			from := uint32(1)
 			to := mbox.Messages
-			if mbox.Messages > uint32(limit) {
-				from = mbox.Messages - uint32(limit) + 1
+			if mbox.Messages > uint32(limit) { //nolint:gosec // limit is bounded by CLI flag validation
+				from = mbox.Messages - uint32(limit) + 1 //nolint:gosec // limit is bounded by CLI flag validation
 			}
 
 			seqSet := new(imap.SeqSet)
@@ -181,9 +182,7 @@ func newListCmd() *cobra.Command {
 			}
 
 			// Reverse to show newest first
-			sort.Slice(emails, func(i, j int) bool {
-				return i > j
-			})
+			slices.Reverse(emails)
 
 			return output.Print(emails)
 		},
@@ -204,13 +203,13 @@ func newReadCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var uid uint32
-			fmt.Sscanf(args[0], "%d", &uid)
+			_, _ = fmt.Sscanf(args[0], "%d", &uid)
 
 			c, err := connectIMAP()
 			if err != nil {
 				return err
 			}
-			defer c.Logout()
+			defer func() { _ = c.Logout() }()
 
 			_, err = c.Select(mailbox, true)
 			if err != nil {
@@ -291,6 +290,7 @@ func newReadCmd() *cobra.Command {
 	return cmd
 }
 
+//nolint:gocyclo // complex but clear sequential logic
 func newSendCmd() *cobra.Command {
 	var to string
 	var subject string
@@ -341,11 +341,12 @@ func newSendCmd() *cobra.Command {
 
 			// Try TLS first (port 587), then SSL (port 465)
 			var sendErr error
-			if smtpPort == "587" {
+			switch smtpPort {
+			case "587":
 				sendErr = smtp.SendMail(addr, auth, emailAddr, recipients, msg.Bytes())
-			} else if smtpPort == "465" {
+			case "465":
 				// SSL connection
-				tlsConfig := &tls.Config{ServerName: smtpServer}
+				tlsConfig := &tls.Config{MinVersion: tls.VersionTLS12, ServerName: smtpServer}
 				conn, err := tls.Dial("tcp", addr, tlsConfig)
 				if err != nil {
 					return output.PrintError("connect_failed", err.Error(), nil)
@@ -380,8 +381,8 @@ func newSendCmd() *cobra.Command {
 				if err != nil {
 					return output.PrintError("send_failed", err.Error(), nil)
 				}
-				c.Quit()
-			} else {
+				_ = c.Quit()
+			default:
 				sendErr = smtp.SendMail(addr, auth, emailAddr, recipients, msg.Bytes())
 			}
 
@@ -405,12 +406,13 @@ func newSendCmd() *cobra.Command {
 	cmd.Flags().StringVar(&to, "to", "", "Recipient (required)")
 	cmd.Flags().StringVar(&subject, "subject", "", "Subject (required)")
 	cmd.Flags().StringVar(&cc, "cc", "", "CC recipients (comma-separated)")
-	cmd.MarkFlagRequired("to")
-	cmd.MarkFlagRequired("subject")
+	_ = cmd.MarkFlagRequired("to")
+	_ = cmd.MarkFlagRequired("subject")
 
 	return cmd
 }
 
+//nolint:gocyclo // complex but clear sequential logic
 func newReplyCmd() *cobra.Command {
 	var mailbox string
 	var replyAll bool
@@ -425,7 +427,7 @@ func newReplyCmd() *cobra.Command {
 			}
 
 			var uid uint32
-			fmt.Sscanf(args[0], "%d", &uid)
+			_, _ = fmt.Sscanf(args[0], "%d", &uid)
 			replyBody := args[1]
 
 			// First, fetch the original email to get reply details
@@ -433,7 +435,7 @@ func newReplyCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			defer c.Logout()
+			defer func() { _ = c.Logout() }()
 
 			_, err = c.Select(mailbox, true)
 			if err != nil {
@@ -465,11 +467,12 @@ func newReplyCmd() *cobra.Command {
 
 			// Determine reply recipient
 			var replyTo string
-			if len(msg.Envelope.ReplyTo) > 0 {
+			switch {
+			case len(msg.Envelope.ReplyTo) > 0:
 				replyTo = formatEmailOnly(msg.Envelope.ReplyTo[0])
-			} else if len(msg.Envelope.From) > 0 {
+			case len(msg.Envelope.From) > 0:
 				replyTo = formatEmailOnly(msg.Envelope.From[0])
-			} else {
+			default:
 				return output.PrintError("no_sender", "Cannot determine sender to reply to", nil)
 			}
 
@@ -527,10 +530,11 @@ func newReplyCmd() *cobra.Command {
 			recipients = append(recipients, ccList...)
 
 			var sendErr error
-			if smtpPort == "587" {
+			switch smtpPort {
+			case "587":
 				sendErr = smtp.SendMail(addr, auth, emailAddr, recipients, msgBuf.Bytes())
-			} else if smtpPort == "465" {
-				tlsConfig := &tls.Config{ServerName: smtpServer}
+			case "465":
+				tlsConfig := &tls.Config{MinVersion: tls.VersionTLS12, ServerName: smtpServer}
 				conn, err := tls.Dial("tcp", addr, tlsConfig)
 				if err != nil {
 					return output.PrintError("connect_failed", err.Error(), nil)
@@ -564,8 +568,8 @@ func newReplyCmd() *cobra.Command {
 				if err = w.Close(); err != nil {
 					return output.PrintError("send_failed", err.Error(), nil)
 				}
-				smtpClient.Quit()
-			} else {
+				_ = smtpClient.Quit()
+			default:
 				sendErr = smtp.SendMail(addr, auth, emailAddr, recipients, msgBuf.Bytes())
 			}
 
@@ -605,7 +609,7 @@ func newSearchCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			defer c.Logout()
+			defer func() { _ = c.Logout() }()
 
 			_, err = c.Select(mailbox, true)
 			if err != nil {
@@ -684,9 +688,7 @@ func newSearchCmd() *cobra.Command {
 			}
 
 			// Reverse to show newest first
-			sort.Slice(emails, func(i, j int) bool {
-				return i > j
-			})
+			slices.Reverse(emails)
 
 			return output.Print(emails)
 		},
@@ -747,7 +749,7 @@ func connectIMAP() (*client.Client, error) {
 
 	// Login
 	if err := c.Login(emailAddr, password); err != nil {
-		c.Logout()
+		_ = c.Logout()
 		return nil, output.PrintError("auth_failed", "Login failed - check credentials", map[string]any{
 			"email": emailAddr,
 			"hint":  "For Gmail, use an App Password (not your regular password). Go to: https://myaccount.google.com/apppasswords",

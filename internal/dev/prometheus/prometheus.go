@@ -9,11 +9,14 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
 var httpClient = &http.Client{Timeout: 30 * time.Second}
+
+const statusSuccess = "success"
 
 // QueryResult is LLM-friendly output for an instant query
 type QueryResult struct {
@@ -121,7 +124,7 @@ func newQueryCmd() *cobra.Command {
 			}
 
 			status := getString(raw, "status")
-			if status != "success" {
+			if status != statusSuccess {
 				errMsg := getString(raw, "error")
 				return output.PrintError("query_failed", errMsg, nil)
 			}
@@ -212,7 +215,7 @@ func newRangeCmd() *cobra.Command {
 			}
 
 			status := getString(raw, "status")
-			if status != "success" {
+			if status != statusSuccess {
 				errMsg := getString(raw, "error")
 				return output.PrintError("query_failed", errMsg, nil)
 			}
@@ -279,7 +282,7 @@ func newAlertsCmd() *cobra.Command {
 			}
 
 			status := getString(raw, "status")
-			if status != "success" {
+			if status != statusSuccess {
 				errMsg := getString(raw, "error")
 				return output.PrintError("query_failed", errMsg, nil)
 			}
@@ -337,7 +340,7 @@ func newTargetsCmd() *cobra.Command {
 			}
 
 			status := getString(raw, "status")
-			if status != "success" {
+			if status != statusSuccess {
 				errMsg := getString(raw, "error")
 				return output.PrintError("query_failed", errMsg, nil)
 			}
@@ -376,7 +379,7 @@ func promGet(apiURL string, result any) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, http.NoBody)
 	if err != nil {
 		return err
 	}

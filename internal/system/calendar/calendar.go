@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
@@ -51,7 +52,7 @@ func runAppleScript(script string) (string, error) {
 	cmd := exec.Command("osascript", "-e", script)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("AppleScript error: %v - %s", err, string(out))
+		return "", fmt.Errorf("AppleScript error: %w - %s", err, string(out))
 	}
 	return strings.TrimSpace(string(out)), nil
 }
@@ -226,7 +227,7 @@ func newEventCmd() *cobra.Command {
 
 			calFilter := ""
 			if calendarName != "" {
-				calFilter = fmt.Sprintf(`of calendar "%s"`, calendarName)
+				calFilter = fmt.Sprintf(`of calendar "%s"`, calendarName) //nolint:gocritic // AppleScript syntax requires this format
 			}
 
 			script := fmt.Sprintf(`
@@ -347,12 +348,12 @@ end tell
 			// Build the create script
 			locationPart := ""
 			if location != "" {
-				locationPart = fmt.Sprintf(`set location of newEvent to "%s"`, escapeAppleScriptString(location))
+				locationPart = fmt.Sprintf(`set location of newEvent to "%s"`, escapeAppleScriptString(location)) //nolint:gocritic // AppleScript syntax requires this format
 			}
 
 			notesPart := ""
 			if notes != "" {
-				notesPart = fmt.Sprintf(`set description of newEvent to "%s"`, escapeAppleScriptString(notes))
+				notesPart = fmt.Sprintf(`set description of newEvent to "%s"`, escapeAppleScriptString(notes)) //nolint:gocritic // AppleScript syntax requires this format
 			}
 
 			allDayPart := ""
@@ -408,8 +409,8 @@ end tell
 	cmd.Flags().StringVarP(&location, "location", "l", "", "Event location")
 	cmd.Flags().StringVarP(&notes, "notes", "n", "", "Event notes/description")
 	cmd.Flags().BoolVar(&allDay, "all-day", false, "All-day event")
-	cmd.MarkFlagRequired("start")
-	cmd.MarkFlagRequired("end")
+	_ = cmd.MarkFlagRequired("start")
+	_ = cmd.MarkFlagRequired("end")
 
 	return cmd
 }
@@ -475,7 +476,7 @@ func fetchEvents(calendarName string, startDate, endDate time.Time, period strin
 
 	calFilter := ""
 	if calendarName != "" {
-		calFilter = fmt.Sprintf(` of calendar "%s"`, escapeAppleScriptString(calendarName))
+		calFilter = fmt.Sprintf(` of calendar "%s"`, escapeAppleScriptString(calendarName)) //nolint:gocritic // AppleScript syntax requires this format
 	}
 
 	// Use current date offsets instead of date string parsing for reliability

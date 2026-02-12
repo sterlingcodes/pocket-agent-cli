@@ -13,13 +13,14 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const (
+var (
 	apiBaseURL = "https://api.spotify.com/v1"
-	tokenURL   = "https://accounts.spotify.com/api/token"
+	tokenURL   = "https://accounts.spotify.com/api/token" //nolint:gosec // OAuth endpoint URL, not a credential
 )
 
 var httpClient = &http.Client{Timeout: 30 * time.Second}
@@ -458,7 +459,7 @@ func doRequest(token, reqURL string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 	if err != nil {
 		return nil, output.PrintError("request_failed", fmt.Sprintf("Failed to create request: %s", err.Error()), nil)
 	}

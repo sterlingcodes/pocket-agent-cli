@@ -10,15 +10,17 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const baseURL = "https://internetdb.shodan.io"
+var (
+	baseURL    = "https://internetdb.shodan.io"
+	httpClient = &http.Client{Timeout: 30 * time.Second}
+)
 
-var httpClient = &http.Client{Timeout: 30 * time.Second}
-
-// ShodanResult represents the InternetDB lookup result for an IP
-type ShodanResult struct {
+// Result represents the InternetDB lookup result for an IP
+type Result struct {
 	IP        string   `json:"ip"`
 	Ports     []int    `json:"ports"`
 	Hostnames []string `json:"hostnames"`
@@ -58,7 +60,7 @@ func newLookupCmd() *cobra.Command {
 			defer cancel()
 
 			reqURL := fmt.Sprintf("%s/%s", baseURL, ip)
-			req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+			req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 			if err != nil {
 				return output.PrintError("request_error", fmt.Sprintf("failed to create request: %s", err.Error()), nil)
 			}
@@ -118,7 +120,7 @@ func newLookupCmd() *cobra.Command {
 				vulns = []string{}
 			}
 
-			result := ShodanResult{
+			result := Result{
 				IP:        ip,
 				Ports:     ports,
 				Hostnames: hostnames,

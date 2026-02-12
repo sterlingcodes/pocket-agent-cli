@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
@@ -21,17 +22,17 @@ var httpClient = &http.Client{
 	Timeout: 30 * time.Second,
 }
 
-const apiURL = "https://dpaste.com/api/"
+var apiURL = "https://dpaste.com/api/"
 
-// PasteResult is LLM-friendly paste result
-type PasteResult struct {
+// Result is LLM-friendly paste result
+type Result struct {
 	URL       string `json:"url"`
 	ExpiresIn string `json:"expires_in"`
 	Title     string `json:"title,omitempty"`
 }
 
-// PasteContent is LLM-friendly paste content
-type PasteContent struct {
+// Content is LLM-friendly paste content
+type Content struct {
 	URL     string `json:"url"`
 	Content string `json:"content"`
 }
@@ -142,7 +143,7 @@ func createPaste(content string, expiryDays int, title string) error {
 		pasteURL = strings.TrimSpace(string(body))
 	}
 
-	result := PasteResult{
+	result := Result{
 		URL:       pasteURL,
 		ExpiresIn: fmt.Sprintf("%d days", expiryDays),
 		Title:     title,
@@ -161,7 +162,7 @@ func getPaste(pasteURL string) error {
 		rawURL += ".txt"
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", rawURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", rawURL, http.NoBody)
 	if err != nil {
 		return output.PrintError("fetch_failed", err.Error(), nil)
 	}
@@ -189,7 +190,7 @@ func getPaste(pasteURL string) error {
 		return output.PrintError("read_failed", err.Error(), nil)
 	}
 
-	result := PasteContent{
+	result := Content{
 		URL:     pasteURL,
 		Content: string(body),
 	}

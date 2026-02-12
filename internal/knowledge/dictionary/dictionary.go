@@ -10,10 +10,11 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const baseURL = "https://api.dictionaryapi.dev/api/v2/entries/en"
+var baseURL = "https://api.dictionaryapi.dev/api/v2/entries/en"
 
 var httpClient = &http.Client{Timeout: 30 * time.Second}
 
@@ -140,6 +141,65 @@ func newDefineCmd() *cobra.Command {
 	return cmd
 }
 
+// collectWordRelations fetches a word and collects either synonyms or antonyms
+// from all meanings and definitions.  relType must be "synonyms" or "antonyms".
+func collectWordRelations(word, relType string) error {
+	entries, err := fetchWord(word)
+	if err != nil {
+		return err
+	}
+
+	if len(entries) == 0 {
+		return output.PrintError("not_found", "Word not found: "+word, nil)
+	}
+
+	useSynonyms := relType == "synonyms"
+	result := make(map[string][]string)
+
+	for _, entry := range entries {
+		for _, m := range entry.Meanings {
+			pos := m.PartOfSpeech
+
+			// Collect from meaning level
+			var meaningWords []string
+			if useSynonyms {
+				meaningWords = m.Synonyms
+			} else {
+				meaningWords = m.Antonyms
+			}
+			for _, w := range meaningWords {
+				if !contains(result[pos], w) {
+					result[pos] = append(result[pos], w)
+				}
+			}
+
+			// Collect from definition level
+			for _, d := range m.Definitions {
+				var defWords []string
+				if useSynonyms {
+					defWords = d.Synonyms
+				} else {
+					defWords = d.Antonyms
+				}
+				for _, w := range defWords {
+					if !contains(result[pos], w) {
+						result[pos] = append(result[pos], w)
+					}
+				}
+			}
+		}
+	}
+
+	if len(result) == 0 {
+		return output.PrintError("not_found", "No "+relType+" found for: "+word, nil)
+	}
+
+	return output.Print(map[string]any{
+		"word":  word,
+		relType: result,
+	})
+}
+
 func newSynonymsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "synonyms [word]",
@@ -147,55 +207,7 @@ func newSynonymsCmd() *cobra.Command {
 		Short:   "Get synonyms for a word",
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			word := strings.ToLower(args[0])
-
-			entries, err := fetchWord(word)
-			if err != nil {
-				return err
-			}
-
-			if len(entries) == 0 {
-				return output.PrintError("not_found", "Word not found: "+word, nil)
-			}
-
-			synonyms := make(map[string][]string)
-
-			for _, entry := range entries {
-				for _, m := range entry.Meanings {
-					pos := m.PartOfSpeech
-
-					// Collect from meaning level
-					for _, s := range m.Synonyms {
-						if !contains(synonyms[pos], s) {
-							synonyms[pos] = append(synonyms[pos], s)
-						}
-					}
-
-					// Collect from definition level
-					for _, d := range m.Definitions {
-						for _, s := range d.Synonyms {
-							if !contains(synonyms[pos], s) {
-								synonyms[pos] = append(synonyms[pos], s)
-							}
-						}
-					}
-				}
-			}
-
-			if len(synonyms) == 0 {
-				return output.PrintError("not_found", "No synonyms found for: "+word, nil)
-			}
-
-			// Flatten to simple output
-			type Result struct {
-				Word     string              `json:"word"`
-				Synonyms map[string][]string `json:"synonyms"`
-			}
-
-			return output.Print(Result{
-				Word:     word,
-				Synonyms: synonyms,
-			})
+			return collectWordRelations(strings.ToLower(args[0]), "synonyms")
 		},
 	}
 
@@ -209,54 +221,7 @@ func newAntonymsCmd() *cobra.Command {
 		Short:   "Get antonyms for a word",
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			word := strings.ToLower(args[0])
-
-			entries, err := fetchWord(word)
-			if err != nil {
-				return err
-			}
-
-			if len(entries) == 0 {
-				return output.PrintError("not_found", "Word not found: "+word, nil)
-			}
-
-			antonyms := make(map[string][]string)
-
-			for _, entry := range entries {
-				for _, m := range entry.Meanings {
-					pos := m.PartOfSpeech
-
-					// Collect from meaning level
-					for _, a := range m.Antonyms {
-						if !contains(antonyms[pos], a) {
-							antonyms[pos] = append(antonyms[pos], a)
-						}
-					}
-
-					// Collect from definition level
-					for _, d := range m.Definitions {
-						for _, a := range d.Antonyms {
-							if !contains(antonyms[pos], a) {
-								antonyms[pos] = append(antonyms[pos], a)
-							}
-						}
-					}
-				}
-			}
-
-			if len(antonyms) == 0 {
-				return output.PrintError("not_found", "No antonyms found for: "+word, nil)
-			}
-
-			type Result struct {
-				Word     string              `json:"word"`
-				Antonyms map[string][]string `json:"antonyms"`
-			}
-
-			return output.Print(Result{
-				Word:     word,
-				Antonyms: antonyms,
-			})
+			return collectWordRelations(strings.ToLower(args[0]), "antonyms")
 		},
 	}
 
@@ -290,7 +255,7 @@ func fetchWord(word string) ([]apiEntry, error) {
 
 	reqURL := fmt.Sprintf("%s/%s", baseURL, url.PathEscape(word))
 
-	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 	if err != nil {
 		return nil, output.PrintError("fetch_failed", err.Error(), nil)
 	}
@@ -319,11 +284,11 @@ func fetchWord(word string) ([]apiEntry, error) {
 	return entries, nil
 }
 
-func limitSlice(s []string, max int) []string {
-	if len(s) <= max {
+func limitSlice(s []string, maxLen int) []string {
+	if len(s) <= maxLen {
 		return s
 	}
-	return s[:max]
+	return s[:maxLen]
 }
 
 func contains(slice []string, item string) bool {

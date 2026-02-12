@@ -10,10 +10,11 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const isgdBaseURL = "https://is.gd/create.php"
+var isgdBaseURL = "https://is.gd/create.php"
 
 var httpClient = &http.Client{
 	CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -138,7 +139,7 @@ func newExpandCmd() *cobra.Command {
 
 			// Follow redirects manually to track each hop
 			for i := 0; i < maxHops; i++ {
-				req, err := http.NewRequestWithContext(ctx, "HEAD", currentURL, nil)
+				req, err := http.NewRequestWithContext(ctx, "HEAD", currentURL, http.NoBody)
 				if err != nil {
 					return output.PrintError("fetch_failed", err.Error(), nil)
 				}
@@ -200,7 +201,7 @@ func doRequest(reqURL string) (*http.Response, error) {
 	// Create a separate client for API requests that follows redirects
 	apiClient := &http.Client{}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 	if err != nil {
 		return nil, output.PrintError("fetch_failed", err.Error(), nil)
 	}

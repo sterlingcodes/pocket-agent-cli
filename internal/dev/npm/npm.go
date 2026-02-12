@@ -1,6 +1,7 @@
 package npm
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,10 +10,11 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const baseURL = "https://registry.npmjs.org"
+var baseURL = "https://registry.npmjs.org"
 
 var client = &http.Client{Timeout: 10 * time.Second}
 
@@ -65,7 +67,11 @@ func newSearchCmd() *cobra.Command {
 			query := url.QueryEscape(args[0])
 			reqURL := fmt.Sprintf("https://registry.npmjs.org/-/v1/search?text=%s&size=%d", query, limit)
 
-			resp, err := client.Get(reqURL)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, reqURL, http.NoBody)
+			if err != nil {
+				return output.PrintError("fetch_failed", err.Error(), nil)
+			}
+			resp, err := client.Do(req)
 			if err != nil {
 				return output.PrintError("fetch_failed", err.Error(), nil)
 			}
@@ -120,7 +126,11 @@ func newInfoCmd() *cobra.Command {
 			pkgName := args[0]
 			reqURL := fmt.Sprintf("%s/%s", baseURL, url.PathEscape(pkgName))
 
-			resp, err := client.Get(reqURL)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, reqURL, http.NoBody)
+			if err != nil {
+				return output.PrintError("fetch_failed", err.Error(), nil)
+			}
+			resp, err := client.Do(req)
 			if err != nil {
 				return output.PrintError("fetch_failed", err.Error(), nil)
 			}
@@ -198,7 +208,11 @@ func newVersionsCmd() *cobra.Command {
 			pkgName := args[0]
 			reqURL := fmt.Sprintf("%s/%s", baseURL, url.PathEscape(pkgName))
 
-			resp, err := client.Get(reqURL)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, reqURL, http.NoBody)
+			if err != nil {
+				return output.PrintError("fetch_failed", err.Error(), nil)
+			}
+			resp, err := client.Do(req)
 			if err != nil {
 				return output.PrintError("fetch_failed", err.Error(), nil)
 			}
@@ -274,7 +288,11 @@ func newDepsCmd() *cobra.Command {
 			pkgName := args[0]
 			reqURL := fmt.Sprintf("%s/%s/latest", baseURL, url.PathEscape(pkgName))
 
-			resp, err := client.Get(reqURL)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, reqURL, http.NoBody)
+			if err != nil {
+				return output.PrintError("fetch_failed", err.Error(), nil)
+			}
+			resp, err := client.Do(req)
 			if err != nil {
 				return output.PrintError("fetch_failed", err.Error(), nil)
 			}

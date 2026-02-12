@@ -10,12 +10,14 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const baseURL = "https://crt.sh"
-
-var httpClient = &http.Client{Timeout: 30 * time.Second}
+var (
+	baseURL    = "https://crt.sh"
+	httpClient = &http.Client{Timeout: 30 * time.Second}
+)
 
 // CertEntry represents a certificate transparency log entry
 type CertEntry struct {
@@ -65,7 +67,7 @@ func newLookupCmd() *cobra.Command {
 			}
 
 			reqURL := fmt.Sprintf("%s/?%s", baseURL, params.Encode())
-			req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+			req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 			if err != nil {
 				return output.PrintError("request_error", fmt.Sprintf("failed to create request: %s", err.Error()), nil)
 			}

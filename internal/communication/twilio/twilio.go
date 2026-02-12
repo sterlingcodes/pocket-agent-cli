@@ -12,13 +12,14 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/common/config"
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
 var httpClient = &http.Client{Timeout: 30 * time.Second}
 
-const baseURL = "https://api.twilio.com/2010-04-01/Accounts"
+var baseURL = "https://api.twilio.com/2010-04-01/Accounts"
 
 // Message represents a Twilio SMS message (LLM-friendly)
 type Message struct {
@@ -191,11 +192,12 @@ func newSendCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&to, "to", "", "Recipient phone number (e.g., +15551234567) (required)")
-	cmd.MarkFlagRequired("to")
+	_ = cmd.MarkFlagRequired("to")
 
 	return cmd
 }
 
+//nolint:gocyclo // complex but clear sequential logic
 func newMessagesCmd() *cobra.Command {
 	var limit int
 	var direction string
@@ -223,7 +225,7 @@ func newMessagesCmd() *cobra.Command {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
 
-			req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+			req, err := http.NewRequestWithContext(ctx, "GET", apiURL, http.NoBody)
 			if err != nil {
 				return output.PrintError("request_failed", err.Error(), nil)
 			}
@@ -258,7 +260,8 @@ func newMessagesCmd() *cobra.Command {
 			}
 
 			messages := make([]Message, 0, len(apiResp.Messages))
-			for _, m := range apiResp.Messages {
+			for i := range apiResp.Messages {
+				m := &apiResp.Messages[i]
 				msg := Message{
 					SID:         m.SID,
 					From:        m.From,
@@ -309,7 +312,7 @@ func newMessageCmd() *cobra.Command {
 			defer cancel()
 
 			apiURL := fmt.Sprintf("%s/%s/Messages/%s.json", baseURL, sid, messageSID)
-			req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+			req, err := http.NewRequestWithContext(ctx, "GET", apiURL, http.NoBody)
 			if err != nil {
 				return output.PrintError("request_failed", err.Error(), nil)
 			}
@@ -385,7 +388,7 @@ func newAccountCmd() *cobra.Command {
 			defer cancel()
 
 			apiURL := fmt.Sprintf("%s/%s.json", baseURL, sid)
-			req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+			req, err := http.NewRequestWithContext(ctx, "GET", apiURL, http.NoBody)
 			if err != nil {
 				return output.PrintError("request_failed", err.Error(), nil)
 			}

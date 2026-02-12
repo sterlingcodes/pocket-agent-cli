@@ -2,6 +2,7 @@ package commands
 
 import (
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/knowledge/dictionary"
 	"github.com/unstablemind/pocket/internal/knowledge/stackexchange"
 	"github.com/unstablemind/pocket/internal/knowledge/wikipedia"

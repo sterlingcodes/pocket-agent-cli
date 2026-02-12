@@ -10,10 +10,11 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/pkg/output"
 )
 
-const baseURL = "https://api.frankfurter.app"
+var baseURL = "https://api.frankfurter.app"
 
 var httpClient = &http.Client{Timeout: 30 * time.Second}
 
@@ -201,7 +202,7 @@ func doRequest(reqURL string) (*http.Response, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, http.NoBody)
 	if err != nil {
 		return nil, output.PrintError("fetch_failed", err.Error(), nil)
 	}

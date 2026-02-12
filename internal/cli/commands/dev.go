@@ -2,6 +2,7 @@ package commands
 
 import (
 	"github.com/spf13/cobra"
+
 	"github.com/unstablemind/pocket/internal/dev/cloudflare"
 	"github.com/unstablemind/pocket/internal/dev/database"
 	"github.com/unstablemind/pocket/internal/dev/dockerhub"
