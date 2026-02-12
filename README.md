@@ -63,7 +63,7 @@ Pocket CLI changes that. It's a universal interface that lets any AI agent inter
 - Query Wikipedia, StackOverflow, dictionaries
 - Manage Todoist tasks, Notion pages, Obsidian vaults
 - Control macOS apps: Calendar, Reminders, Notes, Contacts, Finder, Safari
-- **69 integrations** across 9 categories
+- **72 integrations** across 10 categories
 
 All with simple commands that return clean JSON — perfect for AI to understand and act on.
 
@@ -235,7 +235,7 @@ pocket productivity logseq search "todo" # Search pages
 
 ---
 
-## 📦 All 69 integrations
+## 📦 All 72 integrations
 
 | Category | Services |
 |----------|----------|
@@ -247,10 +247,11 @@ pocket productivity logseq search "todo" # Search pages
 | **Productivity** (8) | Todoist, Notion, Google Calendar, Google Drive, Google Sheets, Trello, Obsidian, Logseq |
 | **Utility** (14) | Weather, Crypto, Currency, IP lookup, DNS/WHOIS/SSL, Wayback Machine, Holidays, Translation, URL Shortener, Stocks, Geocoding, Network Diagnostics, Pastebin, Timezone |
 | **Security** (4) | VirusTotal, Shodan, Certificate Transparency (crt.sh), Have I Been Pwned |
+| **Marketing** (3) | Facebook Ads (Meta), Amazon Selling Partner, Shopify |
 | **System** (9) | Apple Calendar, Apple Reminders, Apple Notes, Apple Contacts, Apple Mail, Safari, Finder, Clipboard, iMessage *(macOS only)* |
 
-### 33 integrations work without any setup:
-Hacker News, RSS, Wikipedia, StackOverflow, Dictionary, Weather, Crypto, Currency, IP lookup, Domain tools, Wayback Machine, Holidays, Translation, URL Shortener, npm, PyPI, Docker Hub, Prometheus, Network Diagnostics, Pastebin, Timezone, Certificate Transparency, ntfy notifications, Webhooks, plus all 9 macOS System integrations
+### 38 integrations work without any setup:
+Hacker News, RSS, Wikipedia, StackOverflow, Dictionary, Weather, Crypto, Currency, IP lookup, Domain tools, Wayback Machine, Holidays, Translation, URL Shortener, npm, PyPI, Docker Hub, Gist, Kubernetes, Database, Geocoding, Timezone, Network Diagnostics, Pastebin, Shodan, Certificate Transparency, Have I Been Pwned, ntfy notifications, Webhooks, plus all 9 macOS System integrations
 
 ---
 
