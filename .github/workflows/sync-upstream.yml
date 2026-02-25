@@ -1,0 +1,106 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    - cron: '0 8 * * *'  # Daily at 8am UTC
+  workflow_dispatch:       # Manual trigger from Actions tab
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: git remote add upstream https://github.com/KenKaiii/pocket-agent-cli.git
+
+      - name: Fetch upstream
+        run: git fetch upstream main
+
+      - name: Check for new commits
+        id: check
+        run: |
+          BEHIND=$(git rev-list --count HEAD..upstream/main)
+          echo "behind=$BEHIND" >> "$GITHUB_OUTPUT"
+          if [ "$BEHIND" -eq 0 ]; then
+            echo "Already up to date with upstream."
+          else
+            echo "Upstream has $BEHIND new commit(s)."
+          fi
+
+      - name: Attempt merge
+        if: steps.check.outputs.behind != '0'
+        id: merge
+        run: |
+          if git merge upstream/main --no-edit; then
+            echo "conflict=false" >> "$GITHUB_OUTPUT"
+          else
+            git merge --abort
+            echo "conflict=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Push merged changes
+        if: steps.check.outputs.behind != '0' && steps.merge.outputs.conflict == 'false'
+        run: git push origin main
+
+      - name: Determine next version and tag
+        if: steps.check.outputs.behind != '0' && steps.merge.outputs.conflict == 'false'
+        id: version
+        run: |
+          # Get latest tag
+          LATEST_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+          if [ -z "$LATEST_TAG" ]; then
+            NEXT_TAG="v0.1.0"
+          else
+            # Bump patch version
+            MAJOR=$(echo "$LATEST_TAG" | sed 's/v//' | cut -d. -f1)
+            MINOR=$(echo "$LATEST_TAG" | sed 's/v//' | cut -d. -f2)
+            PATCH=$(echo "$LATEST_TAG" | sed 's/v//' | cut -d. -f3)
+            NEXT_PATCH=$((PATCH + 1))
+            NEXT_TAG="v${MAJOR}.${MINOR}.${NEXT_PATCH}"
+          fi
+          echo "tag=$NEXT_TAG" >> "$GITHUB_OUTPUT"
+          echo "Next release: $NEXT_TAG"
+
+      - name: Create and push tag
+        if: steps.check.outputs.behind != '0' && steps.merge.outputs.conflict == 'false'
+        run: |
+          git tag ${{ steps.version.outputs.tag }} -m "Upstream sync from KenKaiii/pocket-agent-cli"
+          git push origin ${{ steps.version.outputs.tag }}
+
+      - name: Create PR for conflicts
+        if: steps.check.outputs.behind != '0' && steps.merge.outputs.conflict == 'true'
+        run: |
+          # Create a sync branch with upstream changes
+          git checkout -b upstream-sync-$(date +%Y%m%d)
+          git merge upstream/main --no-edit || true
+          git add -A
+          git commit -m "WIP: upstream sync with conflicts" --allow-empty || true
+          git push origin upstream-sync-$(date +%Y%m%d)
+
+          gh pr create \
+            --title "Upstream sync — merge conflicts need resolution" \
+            --body "$(cat <<'EOF'
+          ## Automatic upstream sync
+
+          New commits from [KenKaiii/pocket-agent-cli](https://github.com/KenKaiii/pocket-agent-cli) could not be merged automatically due to conflicts.
+
+          **Action needed:** Resolve the merge conflicts, then merge this PR. A release will need to be tagged manually after merging.
+          EOF
+          )" \
+            --head upstream-sync-$(date +%Y%m%d) \
+            --base main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
