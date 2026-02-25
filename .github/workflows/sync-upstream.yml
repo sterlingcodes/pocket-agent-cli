@@ -101,6 +101,19 @@ jobs:
           EOF
           )" \
             --head upstream-sync-$(date +%Y%m%d) \
-            --base main
+            --base main \
+            --assignee sterlingcodes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        if: steps.check.outputs.behind != '0'
+        run: |
+          if [ "${{ steps.merge.outputs.conflict }}" = "false" ]; then
+            echo "### Upstream Sync Complete" >> "$GITHUB_STEP_SUMMARY"
+            echo "Merged ${{ steps.check.outputs.behind }} commit(s) from upstream." >> "$GITHUB_STEP_SUMMARY"
+            echo "Released as **${{ steps.version.outputs.tag }}** — CI is building binaries." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### Upstream Sync — Conflicts" >> "$GITHUB_STEP_SUMMARY"
+            echo "Could not auto-merge ${{ steps.check.outputs.behind }} commit(s). A PR has been created for manual resolution." >> "$GITHUB_STEP_SUMMARY"
+          fi
