@@ -48,17 +48,19 @@ func NewCmd() *cobra.Command {
 
 func newDownloadCmd() *cobra.Command {
 	var format string
+	var cookies string
 
 	cmd := &cobra.Command{
 		Use:   "download [url]",
 		Short: "Download video from URL via yt-dlp",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDownload(args[0], format)
+			return runDownload(args[0], format, cookies)
 		},
 	}
 
 	cmd.Flags().StringVarP(&format, "format", "f", "", "yt-dlp format string (default: best merged)")
+	cmd.Flags().StringVarP(&cookies, "cookies-from-browser", "c", "", "Browser to extract cookies from (chrome, firefox, safari, edge, brave, opera)")
 
 	return cmd
 }
@@ -131,7 +133,7 @@ func installHint() string {
 	}
 }
 
-func runDownload(url, format string) error {
+func runDownload(url, format, cookies string) error {
 	if err := ensureYtdlp(); err != nil {
 		return err
 	}
@@ -149,6 +151,9 @@ func runDownload(url, format string) error {
 	}
 	if format != "" {
 		cmdArgs = append(cmdArgs, "-f", format)
+	}
+	if cookies != "" {
+		cmdArgs = append(cmdArgs, "--cookies-from-browser", cookies)
 	}
 	cmdArgs = append(cmdArgs, url)
 
