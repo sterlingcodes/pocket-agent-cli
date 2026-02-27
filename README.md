@@ -63,7 +63,7 @@ Pocket CLI changes that. It's a universal interface that lets any AI agent inter
 - Query Wikipedia, StackOverflow, dictionaries
 - Manage Todoist tasks, Notion pages, Obsidian vaults
 - Control macOS apps: Calendar, Reminders, Notes, Contacts, Finder, Safari
-- **80 integrations** across 10 categories
+- **81 integrations** across 10 categories
 
 All with simple commands that return clean JSON — perfect for AI to understand and act on.
 
@@ -87,6 +87,7 @@ pocket security crtsh lookup example.com      # Certificate transparency logs
 pocket utility netdiag ping example.com      # Network diagnostics
 pocket utility timezone get "America/New_York" # Timezone info
 pocket utility paste create "code snippet"   # Create a paste
+pocket utility video download [url]          # Download video (auto-installs yt-dlp)
 
 # macOS only (no auth needed)
 pocket system reminders today        # Today's reminders
@@ -235,7 +236,7 @@ pocket productivity logseq search "todo" # Search pages
 
 ---
 
-## 📦 All 80 integrations
+## 📦 All 81 integrations
 
 | Category | Services |
 |----------|----------|
@@ -245,13 +246,13 @@ pocket productivity logseq search "todo" # Search pages
 | **Knowledge** (3) | Wikipedia, StackOverflow, Dictionary |
 | **Dev Tools** (16) | GitHub, GitLab, Gist, Linear, Jira, Sentry, Cloudflare, Vercel, npm, PyPI, Docker Hub, Redis, Prometheus, Kubernetes, Database, S3 |
 | **Productivity** (8) | Todoist, Notion, Google Calendar, Google Drive, Google Sheets, Trello, Obsidian, Logseq |
-| **Utility** (18) | Weather, Crypto, Currency, IP lookup, DNS/WHOIS/SSL, Wayback Machine, Holidays, Translation, URL Shortener, Stocks, Geocoding, Network Diagnostics, Pastebin, Timezone, DNS Benchmark, Speed Test, Traceroute, WiFi Info |
+| **Utility** (19) | Weather, Crypto, Currency, IP lookup, DNS/WHOIS/SSL, Wayback Machine, Holidays, Translation, URL Shortener, Stocks, Geocoding, Network Diagnostics, Pastebin, Timezone, DNS Benchmark, Speed Test, Traceroute, WiFi Info, Video Download (yt-dlp) |
 | **Security** (4) | VirusTotal, Shodan, Certificate Transparency (crt.sh), Have I Been Pwned |
 | **Marketing** (3) | Facebook Ads (Meta), Amazon Selling Partner, Shopify |
 | **System** (13) | Apple Calendar, Apple Reminders, Apple Notes, Apple Contacts, Apple Mail, Safari, Finder, Clipboard, iMessage, Battery, System Cleanup, Disk Health, System Info *(macOS only)* |
 
-### 46 integrations work without any setup:
-Hacker News, RSS, Wikipedia, StackOverflow, Dictionary, Weather, Crypto, Currency, IP lookup, Domain tools, Wayback Machine, Holidays, Translation, URL Shortener, npm, PyPI, Docker Hub, Gist, Kubernetes, Database, Geocoding, Timezone, Network Diagnostics, Pastebin, DNS Benchmark, Speed Test, Traceroute, WiFi Info, Shodan, Certificate Transparency, Have I Been Pwned, ntfy notifications, Webhooks, plus all 13 macOS System integrations
+### 47 integrations work without any setup:
+Hacker News, RSS, Wikipedia, StackOverflow, Dictionary, Weather, Crypto, Currency, IP lookup, Domain tools, Wayback Machine, Holidays, Translation, URL Shortener, npm, PyPI, Docker Hub, Gist, Kubernetes, Database, Geocoding, Timezone, Network Diagnostics, Pastebin, DNS Benchmark, Speed Test, Traceroute, WiFi Info, Video Download, Shodan, Certificate Transparency, Have I Been Pwned, ntfy notifications, Webhooks, plus all 13 macOS System integrations
 
 ---
 
